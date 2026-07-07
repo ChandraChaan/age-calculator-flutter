@@ -33,6 +33,8 @@ migrate_working_dir/
 /build/
 /coverage/
 
+android/key.properties
+android/app/upload-keystore.jks
 # Symbolication related
 app.*.symbols
 
