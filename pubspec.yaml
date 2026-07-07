@@ -1,0 +1,23 @@
+name: agecalculator
+description: A production-ready Material 3 Age Calculator for Android with light/dark themes and accurate age calculations.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: ^2.5.3
+  intl: ^0.20.2
+  share_plus: ^13.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

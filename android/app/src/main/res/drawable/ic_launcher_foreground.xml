@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+  <!-- Calendar body -->
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M30,34h48c2.2,0 4,1.8 4,4v44c0,2.2 -1.8,4 -4,4H30c-2.2,0 -4,-1.8 -4,-4V38c0,-2.2 1.8,-4 4,-4z" />
+  <!-- Calendar header -->
+  <path
+      android:fillColor="#E8DEF8"
+      android:pathData="M26,38h56v12H26z" />
+  <!-- Calendar rings -->
+  <path
+      android:fillColor="#6750A4"
+      android:pathData="M38,30h4v12h-4zM66,30h4v12h-4z" />
+  <!-- Birthday cake -->
+  <path
+      android:fillColor="#FFD8E4"
+      android:pathData="M42,58h24c2,0 3,2 3,4v8c0,2 -1,4 -3,4H42c-2,0 -3,-2 -3,-4v-8c0,-2 1,-4 3,-4z" />
+  <path
+      android:fillColor="#FFB4AB"
+      android:pathData="M42,58h24v4H42z" />
+  <!-- Candle -->
+  <path
+      android:fillColor="#6750A4"
+      android:pathData="M53,50h2v8h-2z" />
+  <path
+      android:fillColor="#FFBA47"
+      android:pathData="M52,48c0,-1 1,-2 2,-2s2,1 2,2c0,1 -1,2 -2,2s-2,-1 -2,-2z" />
+  <!-- Date dots -->
+  <path
+      android:fillColor="#6750A4"
+      android:pathData="M36,46h4v4h-4zM48,46h4v4h-4zM60,46h4v4h-4z" />
+</vector>
