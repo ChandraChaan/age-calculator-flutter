@@ -1,18 +1,14 @@
+import 'package:agecalculator/engine/calendar_math.dart';
+import 'package:agecalculator/engine/civil_date.dart';
 import 'package:intl/intl.dart';
 
 class AppDateUtils {
   AppDateUtils._();
 
-  static bool isLeapYear(int year) {
-    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
-  }
+  static bool isLeapYear(int year) => CalendarMath.isLeapYear(year);
 
   static int daysInMonth(int year, int month) {
-    const daysPerMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    if (month == 2 && isLeapYear(year)) {
-      return 29;
-    }
-    return daysPerMonth[month - 1];
+    return CalendarMath.daysInMonth(year, month);
   }
 
   static DateTime dateOnly(DateTime date) {
@@ -25,11 +21,11 @@ class AppDateUtils {
   }
 
   static bool isBeforeDate(DateTime date, DateTime other) {
-    return dateOnly(date).isBefore(dateOnly(other));
+    return CivilDate.fromDateTime(date).isBefore(CivilDate.fromDateTime(other));
   }
 
   static bool isAfterDate(DateTime date, DateTime other) {
-    return dateOnly(date).isAfter(dateOnly(other));
+    return CivilDate.fromDateTime(date).isAfter(CivilDate.fromDateTime(other));
   }
 
   static bool isFutureDate(DateTime date, [DateTime? reference]) {
@@ -53,15 +49,15 @@ class AppDateUtils {
   }
 
   static DateTime birthdayInYear(DateTime dob, int year) {
-    if (dob.month == 2 && dob.day == 29 && !isLeapYear(year)) {
-      return DateTime(year, 2, 28);
-    }
-    return DateTime(year, dob.month, dob.day);
+    return CalendarMath.birthdayInYear(
+      CivilDate.fromDateTime(dob),
+      year,
+    ).toDateTime();
   }
 
+  /// Calendar days between the dates of [from] and [to], ignoring time of
+  /// day and daylight-saving transitions.
   static int daysBetween(DateTime from, DateTime to) {
-    final start = DateTime(from.year, from.month, from.day);
-    final end = DateTime(to.year, to.month, to.day);
-    return end.difference(start).inDays;
+    return CivilDate.fromDateTime(from).daysUntil(CivilDate.fromDateTime(to));
   }
 }

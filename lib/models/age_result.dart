@@ -3,9 +3,6 @@ class AgeResult {
     required this.years,
     required this.months,
     required this.days,
-    required this.weeks,
-    required this.hours,
-    required this.minutes,
     required this.totalDays,
     required this.totalMonths,
     required this.totalWeeks,
@@ -22,9 +19,6 @@ class AgeResult {
   final int years;
   final int months;
   final int days;
-  final int weeks;
-  final int hours;
-  final int minutes;
   final int totalDays;
   final int totalMonths;
   final int totalWeeks;

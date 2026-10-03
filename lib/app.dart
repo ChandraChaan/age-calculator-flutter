@@ -68,10 +68,7 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
       darkTheme: AppTheme.darkTheme,
       themeMode: _isThemeLoaded ? _themeMode : ThemeMode.system,
       home: _isThemeLoaded
-          ? HomeScreen(
-              themeMode: _themeMode,
-              onThemeChanged: _setThemeMode,
-            )
+          ? HomeScreen(themeMode: _themeMode, onThemeChanged: _setThemeMode)
           : const _LoadingScreen(),
     );
   }
@@ -82,8 +79,6 @@ class _LoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

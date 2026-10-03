@@ -13,7 +13,8 @@ class ThemeSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
-    final isDark = themeMode == ThemeMode.dark ||
+    final isDark =
+        themeMode == ThemeMode.dark ||
         (themeMode == ThemeMode.system && brightness == Brightness.dark);
     final tooltip = isDark ? 'Switch to light mode' : 'Switch to dark mode';
 

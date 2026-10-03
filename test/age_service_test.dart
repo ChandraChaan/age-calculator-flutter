@@ -70,17 +70,11 @@ void main() {
 
     test('detects future dates', () {
       expect(
-        AppDateUtils.isFutureDate(
-          DateTime(2027, 1, 1),
-          DateTime(2026, 7, 7),
-        ),
+        AppDateUtils.isFutureDate(DateTime(2027, 1, 1), DateTime(2026, 7, 7)),
         isTrue,
       );
       expect(
-        AppDateUtils.isFutureDate(
-          DateTime(2020, 1, 1),
-          DateTime(2026, 7, 7),
-        ),
+        AppDateUtils.isFutureDate(DateTime(2020, 1, 1), DateTime(2026, 7, 7)),
         isFalse,
       );
     });

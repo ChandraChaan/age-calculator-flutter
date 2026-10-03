@@ -1,3 +1,4 @@
+import 'package:agecalculator/utils/date_input_format.dart';
 import 'package:agecalculator/utils/date_utils.dart';
 import 'package:flutter/material.dart';
 
@@ -26,6 +27,13 @@ class DatePickerField extends StatelessWidget {
   Future<void> _pickDate(BuildContext context) async {
     final initialDate = selectedDate ?? lastDate;
     final clampedInitial = _clampDate(initialDate, firstDate, lastDate);
+    // The app's Material localizations are en_US only, so the device locale
+    // decides the typed date order instead.
+    final deviceLocale = View.of(context).platformDispatcher.locale;
+    final inputFormat = DateInputFormat.forLocale(
+      deviceLocale.languageCode,
+      deviceLocale.countryCode,
+    );
 
     final picked = await showDatePicker(
       context: context,
@@ -35,6 +43,10 @@ class DatePickerField extends StatelessWidget {
       helpText: helpText,
       cancelText: 'Cancel',
       confirmText: 'Select',
+      fieldLabelText: 'Enter date (${inputFormat.hintText})',
+      fieldHintText: inputFormat.hintText,
+      errorFormatText: 'Invalid format. Use ${inputFormat.hintText}.',
+      calendarDelegate: _LocaleDateInputDelegate(inputFormat),
     );
 
     if (picked != null) {
@@ -78,5 +90,30 @@ class DatePickerField extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Gregorian calendar whose typed-date field uses [inputFormat].
+class _LocaleDateInputDelegate extends GregorianCalendarDelegate {
+  const _LocaleDateInputDelegate(this.inputFormat);
+
+  final DateInputFormat inputFormat;
+
+  @override
+  String formatCompactDate(DateTime date, MaterialLocalizations localizations) {
+    return inputFormat.format(date);
+  }
+
+  @override
+  DateTime? parseCompactDate(
+    String? inputString,
+    MaterialLocalizations localizations,
+  ) {
+    return inputString == null ? null : inputFormat.parse(inputString);
+  }
+
+  @override
+  String dateHelpText(MaterialLocalizations localizations) {
+    return inputFormat.hintText;
   }
 }

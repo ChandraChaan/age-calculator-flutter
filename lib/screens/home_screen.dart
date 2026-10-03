@@ -129,8 +129,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isWide = constraints.maxWidth >= _wideLayoutBreakpoint;
-            final horizontalPadding =
-                isWide ? _wideHorizontalPadding : _compactHorizontalPadding;
+            final horizontalPadding = isWide
+                ? _wideHorizontalPadding
+                : _compactHorizontalPadding;
 
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
@@ -168,7 +169,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     _ResultsSection(
                       key: ValueKey(_animationKey),
                       result: _result!,
-                      isWide: isWide,
                     ),
                   ],
                 ],
@@ -184,6 +184,15 @@ class _HomeScreenState extends State<HomeScreen> {
 const double _wideLayoutBreakpoint = 600;
 const double _wideHorizontalPadding = 32;
 const double _compactHorizontalPadding = 20;
+
+// Width needed per unit of text scale before items are placed side by side.
+const double _minAgeCardRowWidth = 300;
+const double _minButtonRowWidth = 240;
+
+double _bodyTextScale(BuildContext context) {
+  const bodyFontSize = 14.0;
+  return MediaQuery.textScalerOf(context).scale(bodyFontSize) / bodyFontSize;
+}
 
 class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
@@ -232,53 +241,58 @@ class _ActionButtons extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        FilledButton.icon(
-          onPressed: onCalculate,
-          icon: const Icon(Icons.calculate_rounded),
-          label: const Text('Calculate'),
-        ),
-        const SizedBox(height: 12),
-        Row(
+    final resetButton = OutlinedButton.icon(
+      onPressed: onReset,
+      icon: const Icon(Icons.refresh_rounded),
+      label: const Text('Reset'),
+    );
+    final shareButton = OutlinedButton.icon(
+      onPressed: canShare ? onShare : null,
+      icon: const Icon(Icons.share_rounded),
+      label: const Text('Share'),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stackSecondary =
+            constraints.maxWidth < _minButtonRowWidth * _bodyTextScale(context);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: onReset,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Reset'),
-              ),
+            FilledButton.icon(
+              onPressed: onCalculate,
+              icon: const Icon(Icons.calculate_rounded),
+              label: const Text('Calculate'),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: canShare ? onShare : null,
-                icon: const Icon(Icons.share_rounded),
-                label: const Text('Share'),
+            const SizedBox(height: 12),
+            if (stackSecondary) ...[
+              resetButton,
+              const SizedBox(height: 12),
+              shareButton,
+            ] else
+              Row(
+                children: [
+                  Expanded(child: resetButton),
+                  const SizedBox(width: 12),
+                  Expanded(child: shareButton),
+                ],
               ),
-            ),
           ],
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
 class _ResultsSection extends StatelessWidget {
-  const _ResultsSection({
-    super.key,
-    required this.result,
-    required this.isWide,
-  });
+  const _ResultsSection({super.key, required this.result});
 
   final AgeResult result;
-  final bool isWide;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final crossAxisCount = isWide ? 3 : 2;
     final calculatedOn = AppDateUtils.dateOnly(result.calculatedAt);
 
     return Column(
@@ -286,62 +300,20 @@ class _ResultsSection extends StatelessWidget {
       children: [
         Text(
           'Your Age',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
         Text(
           'Born on ${AppDateUtils.formatDisplayDate(result.dateOfBirth)} · '
           'As of ${AppDateUtils.formatDisplayDate(calculatedOn)}',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 16),
-        GridView.count(
-          crossAxisCount: crossAxisCount,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: isWide ? 1.4 : 1.1,
-          children: [
-            AgeCard(
-              label: 'Years',
-              value: '${result.years}',
-              icon: Icons.cake_rounded,
-              accentColor: colorScheme.primary,
-            ),
-            AgeCard(
-              label: 'Months',
-              value: '${result.months}',
-              icon: Icons.calendar_view_month_rounded,
-              accentColor: colorScheme.secondary,
-            ),
-            AgeCard(
-              label: 'Days',
-              value: '${result.days}',
-              icon: Icons.today_rounded,
-              accentColor: colorScheme.tertiary,
-            ),
-            AgeCard(
-              label: 'Weeks',
-              value: '${result.weeks}',
-              icon: Icons.date_range_rounded,
-            ),
-            AgeCard(
-              label: 'Hours',
-              value: '${result.hours}',
-              icon: Icons.schedule_rounded,
-            ),
-            AgeCard(
-              label: 'Minutes',
-              value: '${result.minutes}',
-              icon: Icons.timer_outlined,
-            ),
-          ],
-        ),
+        _PrimaryAgeCards(result: result),
         const SizedBox(height: 16),
         InfoCard(
           title: 'Total Time Lived',
@@ -378,10 +350,7 @@ class _ResultsSection extends StatelessWidget {
               label: 'Next Birthday Countdown',
               value: AppDateUtils.pluralize(result.nextBirthdayDays, 'day'),
             ),
-            InfoItem(
-              label: 'Birthday Weekday',
-              value: result.birthdayWeekday,
-            ),
+            InfoItem(label: 'Birthday Weekday', value: result.birthdayWeekday),
             InfoItem(
               label: 'Age in Months',
               value: AppDateUtils.pluralize(result.ageInMonths, 'month'),
@@ -393,6 +362,73 @@ class _ResultsSection extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _PrimaryAgeCards extends StatelessWidget {
+  const _PrimaryAgeCards({required this.result});
+
+  final AgeResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fitsInRow =
+            constraints.maxWidth >=
+            _minAgeCardRowWidth * _bodyTextScale(context);
+
+        final cards = [
+          AgeCard(
+            label: 'Years',
+            value: '${result.years}',
+            icon: Icons.cake_rounded,
+            accentColor: colorScheme.primary,
+            horizontal: !fitsInRow,
+          ),
+          AgeCard(
+            label: 'Months',
+            value: '${result.months}',
+            icon: Icons.calendar_view_month_rounded,
+            accentColor: colorScheme.secondary,
+            horizontal: !fitsInRow,
+          ),
+          AgeCard(
+            label: 'Days',
+            value: '${result.days}',
+            icon: Icons.today_rounded,
+            accentColor: colorScheme.tertiary,
+            horizontal: !fitsInRow,
+          ),
+        ];
+
+        if (!fitsInRow) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < cards.length; i++) ...[
+                if (i > 0) const SizedBox(height: 12),
+                cards[i],
+              ],
+            ],
+          );
+        }
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < cards.length; i++) ...[
+                if (i > 0) const SizedBox(width: 12),
+                Expanded(child: cards[i]),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -41,11 +41,13 @@ class InfoCard extends StatelessWidget {
                     Icon(icon, color: colorScheme.primary, size: 22),
                     const SizedBox(width: 10),
                   ],
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -55,24 +57,28 @@ class InfoCard extends StatelessWidget {
                   padding: EdgeInsets.only(
                     bottom: i == items.length - 1 ? 0 : 12,
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
+                  // Wrap moves the value below its label when both don't fit
+                  // on one line (narrow screens, large text).
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
+                      runSpacing: 2,
+                      children: [
+                        Text(
                           items[i].label,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: colorScheme.onSurfaceVariant),
                         ),
-                      ),
-                      Text(
-                        items[i].value,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ],
+                        Text(
+                          items[i].value,
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
             ],

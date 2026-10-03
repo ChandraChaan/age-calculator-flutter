@@ -27,7 +27,8 @@ Total Hours: ${result.totalHours}
 Total Minutes: ${result.totalMinutes}
 
 Next Birthday: ${AppDateUtils.pluralize(result.nextBirthdayDays, 'day')}
-'''.trim();
+'''
+        .trim();
   }
 
   Future<void> shareResult(AgeResult result) async {
