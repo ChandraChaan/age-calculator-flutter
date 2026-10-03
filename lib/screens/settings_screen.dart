@@ -35,6 +35,9 @@ class SettingsScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Delete all'),
           ),
         ],
@@ -74,33 +77,50 @@ class SettingsScreen extends StatelessWidget {
                 const _SectionTitle('Theme'),
                 const SizedBox(height: 12),
                 LayoutBuilder(
-                  builder: (context, constraints) => SegmentedButton<ThemeMode>(
-                    direction:
-                        constraints.maxWidth >= _minThemeRowWidth * textScale
-                        ? Axis.horizontal
-                        : Axis.vertical,
-                    showSelectedIcon: false,
-                    segments: const [
-                      ButtonSegment(
-                        value: ThemeMode.system,
-                        icon: Icon(Icons.brightness_auto_rounded),
-                        label: Text('System'),
-                      ),
-                      ButtonSegment(
-                        value: ThemeMode.light,
-                        icon: Icon(Icons.light_mode_rounded),
-                        label: Text('Light'),
-                      ),
-                      ButtonSegment(
-                        value: ThemeMode.dark,
-                        icon: Icon(Icons.dark_mode_rounded),
-                        label: Text('Dark'),
-                      ),
-                    ],
-                    selected: {themeMode},
-                    onSelectionChanged: (selection) =>
-                        onThemeChanged(selection.single),
-                  ),
+                  builder: (context, constraints) {
+                    final inRow =
+                        constraints.maxWidth >= _minThemeRowWidth * textScale;
+                    final themes = SegmentedButton<ThemeMode>(
+                      direction: inRow ? Axis.horizontal : Axis.vertical,
+                      // A stadium outline clips the ends of a vertical stack.
+                      style: inRow
+                          ? null
+                          : SegmentedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                      showSelectedIcon: false,
+                      segments: const [
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          icon: Icon(Icons.brightness_auto_rounded),
+                          label: Text('System'),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          icon: Icon(Icons.light_mode_rounded),
+                          label: Text('Light'),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          icon: Icon(Icons.dark_mode_rounded),
+                          label: Text('Dark'),
+                        ),
+                      ],
+                      selected: {themeMode},
+                      onSelectionChanged: (selection) =>
+                          onThemeChanged(selection.single),
+                    );
+                    // Stacked segments keep their own width; without this
+                    // the outline would stretch past the highlight.
+                    return inRow
+                        ? themes
+                        : Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: themes,
+                          );
+                  },
                 ),
                 const SizedBox(height: 32),
                 const _SectionTitle('Your data'),
@@ -124,8 +144,9 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Your events are stored only on this device. The app '
-                        'has no account and no internet access.',
+                        'Your events are stored locally on your device. The '
+                        'app does not use an account or sync your events '
+                        'online.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),

@@ -96,21 +96,8 @@ Future<List<Object?>> pushPage(
 }
 
 /// Types [text] into the editor's date picker and confirms it.
-Future<void> typeEventDate(WidgetTester tester, String text) async {
-  await tester.tap(datePickerButton('Date'));
-  await tester.pumpAndSettle();
-  await tester.tap(find.byIcon(Icons.edit_outlined));
-  await tester.pumpAndSettle();
-  await tester.enterText(
-    find.descendant(
-      of: find.byType(DatePickerDialog),
-      matching: find.byType(TextField),
-    ),
-    text,
-  );
-  await tester.tap(find.text('Select'));
-  await tester.pumpAndSettle();
-}
+Future<void> typeEventDate(WidgetTester tester, String text) =>
+    typeDate(tester, 'Date', text);
 
 /// In an open time picker, types [hour] and [minute] and confirms.
 Future<void> typeTime(WidgetTester tester, String hour, String minute) async {

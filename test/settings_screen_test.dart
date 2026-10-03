@@ -14,8 +14,8 @@ import 'support/event_screens_driver.dart';
 import 'support/upcoming_fixtures.dart';
 
 const _privacyNote =
-    'Your events are stored only on this device. The app has no account and '
-    'no internet access.';
+    'Your events are stored locally on your device. The app does not use an '
+    'account or sync your events online.';
 
 Finder _segment(String label) => find.descendant(
   of: find.byType(SegmentedButton<ThemeMode>),

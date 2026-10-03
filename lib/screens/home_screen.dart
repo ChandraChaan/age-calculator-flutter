@@ -89,6 +89,13 @@ class _HomeScreenState extends State<HomeScreen> {
     _calculate(showValidationFeedback: false);
   }
 
+  void _onDateOfBirthCleared() {
+    setState(() {
+      _selectedDob = null;
+      _result = null;
+    });
+  }
+
   void _onCurrentDateSelected(DateTime date) {
     setState(() => _selectedCurrentDate = date);
     if (_selectedDob != null) {
@@ -138,6 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 : _compactHorizontalPadding;
 
             return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
                 8,
@@ -158,6 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     dateOfBirth: _selectedDob,
                     currentDate: _selectedCurrentDate,
                     onDateOfBirthSelected: _onDateOfBirthSelected,
+                    onDateOfBirthCleared: _onDateOfBirthCleared,
                     onCurrentDateSelected: _onCurrentDateSelected,
                   ),
                   const SizedBox(height: 16),

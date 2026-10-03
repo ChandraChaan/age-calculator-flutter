@@ -140,7 +140,7 @@ void main() {
       );
       expect(
         find.descendant(
-          of: datePickerButton('Date'),
+          of: dateTextField('Date'),
           matching: find.text('15 March 2000'),
         ),
         findsOneWidget,

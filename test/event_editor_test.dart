@@ -118,7 +118,7 @@ void main() {
       expect(_selectedChips(tester), ['Event']);
       expect(
         find.descendant(
-          of: datePickerButton('Date'),
+          of: dateTextField('Date'),
           matching: find.text('15 June 2026'),
         ),
         findsOneWidget,
@@ -161,7 +161,7 @@ void main() {
       expect(_selectedChips(tester), ['Exam']);
       expect(
         find.descendant(
-          of: datePickerButton('Date'),
+          of: dateTextField('Date'),
           matching: find.text('01 July 2026'),
         ),
         findsOneWidget,
@@ -204,6 +204,40 @@ void main() {
       await tester.enterText(_titleField, '  Sai\'s birthday  ');
       await _save(tester);
       expect(editor.events.events.single.title, "Sai's birthday");
+    });
+
+    testWidgets('Save waits for a complete date', (tester) async {
+      final editor = await _openCreate(tester);
+      await tester.enterText(_titleField, 'Trip');
+      final date = dateTextField('Date');
+      await tester.tap(date);
+      await tester.pump();
+
+      await pressKeys(tester, date, '0618');
+      expect(_saveEnabled(tester), isFalse);
+      await pressKeys(tester, date, '2026');
+      await tester.pumpAndSettle();
+      expect(_saveEnabled(tester), isTrue);
+
+      await _save(tester);
+      expect(editor.events.events.single.date, CivilDate(2026, 6, 18));
+    });
+
+    testWidgets('a half-typed date counts as an unsaved change', (
+      tester,
+    ) async {
+      await _openEdit(tester, _timedEvent());
+      final date = dateTextField('Date');
+      await tester.tap(date);
+      await tester.pump();
+      await pressKeys(tester, date, '07');
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Enter the full date as MM/DD/YYYY.'), findsOneWidget);
+      expect(_saveEnabled(tester), isFalse);
+      await _cancel(tester);
+      expect(find.text('Discard changes?'), findsOneWidget);
     });
 
     testWidgets('notes are at most 500 characters', (tester) async {

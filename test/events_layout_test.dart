@@ -349,7 +349,7 @@ void main() {
           expect(button.right, lessThanOrEqualTo(size.width));
           expect(button.height, greaterThanOrEqualTo(48));
 
-          final note = find.textContaining('stored only on this device');
+          final note = find.textContaining('stored locally on your device');
           await tester.scrollUntilVisible(
             note,
             200,

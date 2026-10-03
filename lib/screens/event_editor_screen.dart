@@ -90,6 +90,9 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
   bool _repeatChosen = false;
   bool _saving = false;
 
+  // False while the date field holds text that isn't a complete valid date.
+  bool _dateValid = true;
+
   @override
   void initState() {
     super.initState();
@@ -160,9 +163,9 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
     notes: _notes.text,
   );
 
-  bool get _hasChanges => _fields != _initialFields;
+  bool get _hasChanges => _fields != _initialFields || !_dateValid;
 
-  bool get _canSave => !_saving && _title.text.trim().isNotEmpty;
+  bool get _canSave => !_saving && _dateValid && _title.text.trim().isNotEmpty;
 
   String get _screenTitle => switch (widget._mode) {
     _Mode.create || _Mode.saveBirthday => 'New event',
@@ -211,7 +214,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
 
   Future<void> _save() async {
     final title = _title.text.trim();
-    if (title.isEmpty || _saving) return;
+    if (title.isEmpty || !_dateValid || _saving) return;
     final notes = _notes.text.trim();
     final base =
         widget.initial ??
@@ -301,6 +304,9 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
             child: const Text('Discard'),
           ),
         ],
@@ -338,6 +344,8 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
               constraints: const BoxConstraints(maxWidth: _maxContentWidth),
               child: ListView(
                 padding: const EdgeInsets.all(16),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 children: [
                   TextField(
                     controller: _title,
@@ -346,7 +354,8 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
                         widget._mode == _Mode.saveBirthday,
                     maxLength: _maxTitleLength,
                     textCapitalization: TextCapitalization.sentences,
-                    textInputAction: TextInputAction.next,
+                    textInputAction: TextInputAction.done,
+                    onTapOutside: (_) => FocusScope.of(context).unfocus(),
                     decoration: const InputDecoration(
                       labelText: 'Title',
                       border: OutlineInputBorder(),
@@ -370,10 +379,12 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
                   const SizedBox(height: 24),
                   DatePickerField(
                     label: 'Date',
-                    placeholder: 'Select date',
                     selectedDate: _date.toDateTime(),
-                    onDateSelected: (date) =>
-                        setState(() => _date = CivilDate.fromDateTime(date)),
+                    onDateSelected: (date) => setState(() {
+                      _date = CivilDate.fromDateTime(date);
+                      _dateValid = true;
+                    }),
+                    onDateCleared: () => setState(() => _dateValid = false),
                     firstDate: DateTime(1900),
                     lastDate: DateTime(2100, 12, 31),
                     helpText: 'Select date',
@@ -425,6 +436,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
                     maxLines: null,
                     keyboardType: TextInputType.multiline,
                     textCapitalization: TextCapitalization.sentences,
+                    onTapOutside: (_) => FocusScope.of(context).unfocus(),
                     decoration: const InputDecoration(
                       labelText: 'Notes (optional)',
                       alignLabelWithHint: true,

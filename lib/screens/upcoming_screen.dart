@@ -124,10 +124,12 @@ class _NextCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final onCard = colorScheme.onPrimaryContainer;
     final event = occurrence.event;
 
     return MergeSemantics(
       child: Card(
+        color: colorScheme.primaryContainer,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -138,9 +140,7 @@ class _NextCard extends StatelessWidget {
               children: [
                 Text(
                   'Next',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colorScheme.primary,
-                  ),
+                  style: theme.textTheme.labelLarge?.copyWith(color: onCard),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -152,6 +152,7 @@ class _NextCard extends StatelessWidget {
                         event.title,
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: onCard,
                         ),
                       ),
                     ),
@@ -166,7 +167,7 @@ class _NextCard extends StatelessWidget {
                     yearsSinceAnchor: occurrence.yearsSinceAnchor,
                   ),
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                    color: onCard.withValues(alpha: 0.8),
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -174,7 +175,7 @@ class _NextCard extends StatelessWidget {
                   keepNumbersWithUnits(countdownLabel(occurrence.countdown)),
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: colorScheme.primary,
+                    color: onCard,
                   ),
                 ),
               ],
