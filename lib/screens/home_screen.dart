@@ -13,10 +13,14 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.themeMode,
     required this.onThemeChanged,
+    this.onSaveBirthday,
   });
 
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeChanged;
+
+  /// Shows "Save as birthday" with each result when not null.
+  final ValueChanged<AgeResult>? onSaveBirthday;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -169,6 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _ResultsSection(
                       key: ValueKey(_animationKey),
                       result: _result!,
+                      onSaveBirthday: widget.onSaveBirthday,
                     ),
                   ],
                 ],
@@ -286,14 +291,16 @@ class _ActionButtons extends StatelessWidget {
 }
 
 class _ResultsSection extends StatelessWidget {
-  const _ResultsSection({super.key, required this.result});
+  const _ResultsSection({super.key, required this.result, this.onSaveBirthday});
 
   final AgeResult result;
+  final ValueChanged<AgeResult>? onSaveBirthday;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final calculatedOn = AppDateUtils.dateOnly(result.calculatedAt);
+    final saveBirthday = onSaveBirthday;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -312,6 +319,17 @@ class _ResultsSection extends StatelessWidget {
             context,
           ).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
+        if (saveBirthday != null) ...[
+          const SizedBox(height: 12),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: OutlinedButton.icon(
+              onPressed: () => saveBirthday(result),
+              icon: const Icon(Icons.cake_outlined),
+              label: const Text('Save as birthday'),
+            ),
+          ),
+        ],
         const SizedBox(height: 16),
         _PrimaryAgeCards(result: result),
         const SizedBox(height: 16),

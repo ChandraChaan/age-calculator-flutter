@@ -2,7 +2,7 @@ name: agecalculator
 description: A production-ready Material 3 Age Calculator for Android with light/dark themes and accurate age calculations.
 publish_to: 'none'
 
-version: 1.0.1+2
+version: 1.1.0+3
 
 environment:
   sdk: ^3.11.5

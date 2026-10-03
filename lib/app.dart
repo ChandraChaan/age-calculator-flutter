@@ -1,10 +1,15 @@
-import 'package:agecalculator/screens/home_screen.dart';
+import 'package:agecalculator/data/event_storage.dart';
+import 'package:agecalculator/screens/app_shell.dart';
+import 'package:agecalculator/state/event_controller.dart';
 import 'package:agecalculator/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AgeCalculatorApp extends StatefulWidget {
-  const AgeCalculatorApp({super.key});
+  const AgeCalculatorApp({super.key, this.clock});
+
+  /// Source of the current time for events; [DateTime.now] when null.
+  final DateTime Function()? clock;
 
   @override
   State<AgeCalculatorApp> createState() => _AgeCalculatorAppState();
@@ -14,23 +19,40 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
   static const _themeKey = 'theme_mode';
 
   ThemeMode _themeMode = ThemeMode.system;
-  bool _isThemeLoaded = false;
+  EventController? _events;
+  bool _isLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadThemeMode();
+    _load();
   }
 
-  Future<void> _loadThemeMode() async {
+  @override
+  void dispose() {
+    _events?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString(_themeKey);
+    final events = EventController(
+      storage: EventStorage(prefs, newId: generateEventId),
+      clock: widget.clock ?? DateTime.now,
+      newId: generateEventId,
+    );
+    await events.load();
 
-    if (!mounted) return;
+    if (!mounted) {
+      events.dispose();
+      return;
+    }
 
     setState(() {
       _themeMode = _parseThemeMode(saved);
-      _isThemeLoaded = true;
+      _events = events;
+      _isLoaded = true;
     });
   }
 
@@ -66,9 +88,14 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: _isThemeLoaded ? _themeMode : ThemeMode.system,
-      home: _isThemeLoaded
-          ? HomeScreen(themeMode: _themeMode, onThemeChanged: _setThemeMode)
+      themeMode: _isLoaded ? _themeMode : ThemeMode.system,
+      home: _isLoaded
+          ? AppShell(
+              events: _events!,
+              clock: widget.clock ?? DateTime.now,
+              themeMode: _themeMode,
+              onThemeChanged: _setThemeMode,
+            )
           : const _LoadingScreen(),
     );
   }
