@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:agecalculator/engine/civil_date.dart';
+import 'package:agecalculator/home_widget/widget_launch_action.dart';
 import 'package:agecalculator/models/age_result.dart';
 import 'package:agecalculator/models/event.dart';
 import 'package:agecalculator/screens/event_detail_screen.dart';
@@ -20,6 +23,8 @@ class AppShell extends StatefulWidget {
     required this.clock,
     required this.themeMode,
     required this.onThemeChanged,
+    this.initialLaunchAction,
+    this.launchActions,
   });
 
   final EventController events;
@@ -27,17 +32,71 @@ class AppShell extends StatefulWidget {
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeChanged;
 
+  /// The home screen widget tap that started the app, if any.
+  final WidgetLaunchAction? initialLaunchAction;
+
+  /// Home screen widget taps while the app is running.
+  final Stream<WidgetLaunchAction>? launchActions;
+
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends State<AppShell> {
-  // Chosen once per launch: Upcoming when an active event exists, else Age.
-  late AppTab _tab = widget.events.hasActiveEvents
+  // Chosen once per launch: Upcoming when an active event exists or the app
+  // was opened from the widget, else Age.
+  late AppTab _tab =
+      widget.initialLaunchAction != null || widget.events.hasActiveEvents
       ? AppTab.upcoming
       : AppTab.age;
+  StreamSubscription<WidgetLaunchAction>? _launchSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _launchSubscription = widget.launchActions?.listen(_openFromWidget);
+    final initial = widget.initialLaunchAction;
+    if (initial != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _openFromWidget(initial);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _launchSubscription?.cancel();
+    super.dispose();
+  }
 
   void _select(AppTab tab) => setState(() => _tab = tab);
+
+  /// Shows what a widget tap asked for. Detail screens and dialogs above the
+  /// tabs are closed first; an open editor is left alone, so unsaved changes
+  /// are never lost.
+  void _openFromWidget(WidgetLaunchAction action) {
+    var editorOpen = false;
+    Navigator.of(context).popUntil((route) {
+      if (route.isFirst) return true;
+      if (route is PageRoute && route.fullscreenDialog) {
+        editorOpen = true;
+        return true;
+      }
+      return false;
+    });
+    if (editorOpen) return;
+
+    _select(AppTab.upcoming);
+    switch (action) {
+      case OpenUpcoming():
+        break;
+      case OpenEvent(:final eventId):
+        final event = widget.events.eventById(eventId);
+        if (event != null) _openEvent(event);
+      case AddEvent():
+        _addEvent();
+    }
+  }
 
   void _openEvent(Event event) {
     Navigator.of(context).push(

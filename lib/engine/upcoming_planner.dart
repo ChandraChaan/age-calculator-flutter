@@ -175,7 +175,12 @@ int _identityOrder(PlannedOccurrence a, PlannedOccurrence b) {
   return byTitle != 0 ? byTitle : a.event.id.compareTo(b.event.id);
 }
 
-int _upcomingOrder(PlannedOccurrence a, PlannedOccurrence b) {
+int _upcomingOrder(PlannedOccurrence a, PlannedOccurrence b) =>
+    compareUpcoming(a, b);
+
+/// The order of upcoming occurrences everywhere in the app: date, all-day
+/// before timed, time of day, title ignoring case, then id.
+int compareUpcoming(PlannedOccurrence a, PlannedOccurrence b) {
   final byWhen = _whenOrder(a, b);
   return byWhen != 0 ? byWhen : _identityOrder(a, b);
 }
