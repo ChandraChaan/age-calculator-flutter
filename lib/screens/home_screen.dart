@@ -1,4 +1,5 @@
 import 'package:agecalculator/models/age_result.dart';
+import 'package:agecalculator/screens/life_expectancy_screen.dart';
 import 'package:agecalculator/services/age_service.dart';
 import 'package:agecalculator/services/share_service.dart';
 import 'package:agecalculator/utils/date_utils.dart';
@@ -161,7 +162,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => LifeExpectancyScreen(
+                              initialDateOfBirth: _selectedDob,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.favorite_outline),
+                      label: const Text('Life Expectancy Challenge'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   DateSelectionCard(
                     dateOfBirth: _selectedDob,
                     currentDate: _selectedCurrentDate,
