@@ -170,4 +170,4 @@ flutter test
 
 This project is licensed under the [MIT License](LICENSE).
 
-Copyright (c) 2026 Chandra Reddy
+Copyright (c) 2026 Chandra ObulaReddy
