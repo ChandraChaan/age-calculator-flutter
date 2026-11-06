@@ -35,8 +35,64 @@ import '../../test/support/app_launcher.dart';
 import '../../test/support/upcoming_fixtures.dart';
 
 const _out = 'store_assets';
-const _screenLogical = Size(390, 700);
-const _screenDpr = 3.0;
+
+/// One store screenshot format: the app's screen size, and the frame the
+/// captioned screenshot is drawn on.
+class _Device {
+  const _Device({
+    required this.dir,
+    required this.screen,
+    required this.dpr,
+    required this.frame,
+    required this.screenWidth,
+    required this.scale,
+    required this.cornerRadius,
+    required this.ageScroll,
+  });
+
+  final String dir;
+  final Size screen;
+  final double dpr;
+  final Size frame;
+  final double screenWidth;
+
+  /// Caption scale relative to the phone frame.
+  final double scale;
+
+  /// The screen's corner radius inside the bezel.
+  final double cornerRadius;
+
+  /// How far the Age screen is scrolled to show its results.
+  final double ageScroll;
+}
+
+const _phone = _Device(
+  dir: 'screenshots',
+  screen: Size(390, 700),
+  dpr: 3,
+  frame: Size(1080, 1920),
+  screenWidth: 760,
+  scale: 1,
+  cornerRadius: 56,
+  ageScroll: 150,
+);
+
+const _tablet = _Device(
+  dir: 'tablet',
+  screen: Size(800, 1180),
+  dpr: 2,
+  // Play requires exactly 9:16 for tablet screenshots.
+  frame: Size(1440, 2560),
+  screenWidth: 1160,
+  scale: 1.4,
+  cornerRadius: 36,
+  ageScroll: 0,
+);
+
+_Device _device = _phone;
+
+Size get _screenLogical => _device.screen;
+double get _screenDpr => _device.dpr;
 
 String get _flutterRoot =>
     Platform.environment['FLUTTER_ROOT'] ?? '/opt/homebrew/share/flutter';
@@ -369,11 +425,12 @@ Future<void> _compose(
   required String title,
   required String subtitle,
 }) async {
-  const frame = Size(1080, 1920);
+  final frame = _device.frame;
+  final k = _device.scale;
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = frame;
   final theme = dark ? AppTheme.darkTheme : AppTheme.lightTheme;
-  const screenWidth = 760.0;
+  final screenWidth = _device.screenWidth;
   final screenHeight = screenWidth * screen.height / screen.width;
   await tester.pumpWidget(
     RepaintBoundary(
@@ -390,37 +447,39 @@ Future<void> _compose(
                   size: frame,
                   child: Column(
                     children: [
-                      const SizedBox(height: 96),
+                      SizedBox(height: 96 * k),
                       Text(
                         title,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: AppTheme.fontFamily,
-                          fontSize: 68,
+                          fontSize: 68 * k,
                           height: 1.1,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -1.2,
                           color: ink,
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      SizedBox(height: 18 * k),
                       Text(
                         subtitle,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: AppTheme.fontFamily,
-                          fontSize: 34,
+                          fontSize: 34 * k,
                           height: 1.3,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 56),
+                      SizedBox(height: 56 * k),
                       Container(
                         width: screenWidth + 16,
                         height: screenHeight + 16,
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(64),
+                          borderRadius: BorderRadius.circular(
+                            _device.cornerRadius + 8,
+                          ),
                           color: dark
                               ? const Color(0xFF2C2C2E)
                               : const Color(0xFF1C1C1E),
@@ -435,7 +494,9 @@ Future<void> _compose(
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(56),
+                          borderRadius: BorderRadius.circular(
+                            _device.cornerRadius,
+                          ),
                           child: RawImage(
                             image: screen,
                             width: screenWidth,
@@ -556,126 +617,138 @@ void main() {
     _write('$_out/feature-graphic.png', await _capture(tester, 1));
   });
 
-  testWidgets('screenshots', (tester) async {
+  testWidgets('phone screenshots', (tester) async {
     addTearDown(tester.view.reset);
     addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+    _device = _phone;
+    await _renderScreens(tester);
+  });
 
-    // 1. Upcoming, light.
-    await _launch(tester, dark: false, events: _sampleEvents);
-    final upcomingLight = await _grabScreen(tester);
-    await _compose(
-      tester,
-      upcomingLight,
-      '$_out/screenshots/01-upcoming.png',
-      dark: false,
-      title: 'Every date\nthat matters',
-      subtitle: 'Birthdays, trips and exams, counting down.',
-    );
+  testWidgets('tablet screenshots', (tester) async {
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+    _device = _tablet;
+    await _renderScreens(tester);
+    _device = _phone;
+  });
+}
 
-    // 2. Exact age, light.
-    await _launch(tester, dark: false);
-    await typeDate(tester, 'Date of Birth', '03/14/1994');
-    await tester.drag(
-      find.byType(SingleChildScrollView).first,
-      const Offset(0, -150),
-    );
-    await tester.pumpAndSettle();
-    final age = await _grabScreen(tester);
-    await _compose(
-      tester,
-      age,
-      '$_out/screenshots/02-exact-age.png',
-      dark: false,
-      title: 'Your exact age,\ninstantly',
-      subtitle: 'Years, months, days, and every day lived.',
-    );
+Future<void> _renderScreens(WidgetTester tester) async {
+  // 1. Upcoming, light.
+  await _launch(tester, dark: false, events: _sampleEvents);
+  final upcomingLight = await _grabScreen(tester);
+  await _compose(
+    tester,
+    upcomingLight,
+    '$_out/${_device.dir}/01-upcoming.png',
+    dark: false,
+    title: 'Every date\nthat matters',
+    subtitle: 'Birthdays, trips and exams, counting down.',
+  );
 
-    // 3. Event with reminders, dark.
-    await _launch(tester, dark: true, events: _sampleEvents);
-    await tester.scrollUntilVisible(
-      find.text('Final exam'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.text('Final exam'));
-    await tester.pumpAndSettle();
-    final detail = await _grabScreen(tester);
-    await _compose(
-      tester,
-      detail,
-      '$_out/screenshots/03-reminders.png',
-      dark: true,
-      title: 'Reminders that\narrive on time',
-      subtitle: 'From 10 minutes to a week before.',
-    );
+  // 2. Exact age, light.
+  await _launch(tester, dark: false);
+  await typeDate(tester, 'Date of Birth', '03/14/1994');
+  await tester.drag(
+    find.byType(SingleChildScrollView).first,
+    Offset(0, -_device.ageScroll),
+  );
+  await tester.pumpAndSettle();
+  final age = await _grabScreen(tester);
+  await _compose(
+    tester,
+    age,
+    '$_out/${_device.dir}/02-exact-age.png',
+    dark: false,
+    title: 'Your exact age,\ninstantly',
+    subtitle: 'Years, months, days, and every day lived.',
+  );
 
-    // 4. Import from contacts, light.
-    tester.view.devicePixelRatio = _screenDpr;
-    tester.view.physicalSize = _screenLogical * _screenDpr;
-    SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
-    final events = EventController(
-      storage: EventStorage(prefs, newId: () => 'x'),
-      clock: fixedNow,
-      newId: () => 'y',
-    );
-    await events.load();
-    await tester.pumpWidget(
-      RepaintBoundary(
-        key: _boundary,
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          builder: (context, child) => BackdropGroup(child: child!),
-          home: ImportScreen(
-            kind: ImportKind.contacts,
-            importer: _FakeImporter(),
-            events: events,
-            clock: fixedNow,
-          ),
+  // 3. Event with reminders, dark.
+  await _launch(tester, dark: true, events: _sampleEvents);
+  await tester.scrollUntilVisible(
+    find.text('Final exam'),
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.tap(find.text('Final exam'));
+  await tester.pumpAndSettle();
+  final detail = await _grabScreen(tester);
+  await _compose(
+    tester,
+    detail,
+    '$_out/${_device.dir}/03-reminders.png',
+    dark: true,
+    title: 'Reminders that\narrive on time',
+    subtitle: 'From 10 minutes to a week before.',
+  );
+
+  // 4. Import from contacts, light.
+  tester.view.devicePixelRatio = _screenDpr;
+  tester.view.physicalSize = _screenLogical * _screenDpr;
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+  final events = EventController(
+    storage: EventStorage(prefs, newId: () => 'x'),
+    clock: fixedNow,
+    newId: () => 'y',
+  );
+  await events.load();
+  await tester.pumpWidget(
+    RepaintBoundary(
+      key: _boundary,
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        builder: (context, child) => BackdropGroup(child: child!),
+        home: ImportScreen(
+          kind: ImportKind.contacts,
+          importer: _FakeImporter(),
+          events: events,
+          clock: fixedNow,
         ),
       ),
-    );
-    await tester.pumpAndSettle();
-    final import = await _grabScreen(tester);
-    await _compose(
-      tester,
-      import,
-      '$_out/screenshots/04-import.png',
-      dark: false,
-      title: 'Bring in birthdays\nin one tap',
-      subtitle: 'From contacts or your calendar.\nNothing leaves your phone.',
-    );
+    ),
+  );
+  await tester.pumpAndSettle();
+  final import = await _grabScreen(tester);
+  await _compose(
+    tester,
+    import,
+    '$_out/${_device.dir}/04-import.png',
+    dark: false,
+    title: 'Bring in birthdays\nin one tap',
+    subtitle: 'From contacts or your calendar.\nNothing leaves your phone.',
+  );
 
-    // 5. Upcoming, dark.
-    await _launch(tester, dark: true, events: _sampleEvents);
-    final upcomingDark = await _grabScreen(tester);
-    await _compose(
-      tester,
-      upcomingDark,
-      '$_out/screenshots/05-dark.png',
-      dark: true,
-      title: 'Glass, in light\nand dark',
-      subtitle: 'Private, offline, no account.',
-    );
+  // 5. Upcoming, dark.
+  await _launch(tester, dark: true, events: _sampleEvents);
+  final upcomingDark = await _grabScreen(tester);
+  await _compose(
+    tester,
+    upcomingDark,
+    '$_out/${_device.dir}/05-dark.png',
+    dark: true,
+    title: 'Glass, in light\nand dark',
+    subtitle: 'Private, offline, no account.',
+  );
 
-    // 6. Settings, light.
-    await _launch(
-      tester,
-      dark: false,
-      events: _sampleEvents,
-      showDeviceFeatures: true,
-    );
-    await openTab(tester, 'Settings');
-    final settings = await _grabScreen(tester);
-    await _compose(
-      tester,
-      settings,
-      '$_out/screenshots/06-settings.png',
-      dark: false,
-      title: 'Simple, and\nyours alone',
-      subtitle: 'Your events stay on your device.',
-    );
-    events.dispose();
-  });
+  // 6. Settings, light.
+  await _launch(
+    tester,
+    dark: false,
+    events: _sampleEvents,
+    showDeviceFeatures: true,
+  );
+  await openTab(tester, 'Settings');
+  final settings = await _grabScreen(tester);
+  await _compose(
+    tester,
+    settings,
+    '$_out/${_device.dir}/06-settings.png',
+    dark: false,
+    title: 'Simple, and\nyours alone',
+    subtitle: 'Your events stay on your device.',
+  );
+  events.dispose();
 }
