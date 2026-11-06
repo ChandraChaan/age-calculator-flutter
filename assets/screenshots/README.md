@@ -1,8 +1,8 @@
-# Screenshots
+# Store screenshots
 
-Add app screenshots here for the README and Play Store listing.
+Play Store screenshots, the feature graphic and the listing icon live in
+`store_assets/`. Regenerate them from the real app widgets with:
 
-Suggested captures:
-- Light mode home screen
-- Dark mode home screen
-- Age results view
+```bash
+flutter test tool/store_assets/render_store_assets_test.dart
+```

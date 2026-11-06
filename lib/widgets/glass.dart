@@ -19,23 +19,25 @@ class GlassStyle extends ThemeExtension<GlassStyle> {
 
   factory GlassStyle.forBrightness(Brightness brightness, ColorScheme scheme) {
     final isDark = brightness == Brightness.dark;
-    final accent = scheme.primary;
     return GlassStyle(
       fillColor: isDark
-          ? Colors.white.withValues(alpha: 0.07)
-          : Colors.white.withValues(alpha: 0.55),
+          ? Colors.white.withValues(alpha: 0.08)
+          : Colors.white.withValues(alpha: 0.62),
       fillHighlight: isDark
-          ? Colors.white.withValues(alpha: 0.13)
-          : Colors.white.withValues(alpha: 0.78),
+          ? Colors.white.withValues(alpha: 0.15)
+          : Colors.white.withValues(alpha: 0.88),
       borderColor: isDark
-          ? Colors.white.withValues(alpha: 0.13)
-          : Colors.white.withValues(alpha: 0.9),
-      accentGlow: accent.withValues(alpha: isDark ? 0.42 : 0.30),
-      backdropTop: isDark ? const Color(0xFF15122A) : const Color(0xFFF7F5FF),
+          ? Colors.white.withValues(alpha: 0.14)
+          : Colors.white.withValues(alpha: 0.95),
+      // Soft white light behind the glass, as on an iOS wallpaper; no hue.
+      accentGlow: isDark
+          ? Colors.white.withValues(alpha: 0.10)
+          : Colors.white.withValues(alpha: 0.95),
+      backdropTop: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFE9E9EE),
       backdropBottom: isDark
-          ? const Color(0xFF07060D)
-          : const Color(0xFFE7E3F6),
-      blurSigma: isDark ? 22 : 18,
+          ? const Color(0xFF000000)
+          : const Color(0xFFDCDCE2),
+      blurSigma: isDark ? 24 : 20,
     );
   }
 
@@ -159,7 +161,7 @@ class _GlowPainter extends CustomPainter {
 }
 
 /// A frosted card: blurs what is behind it, with a translucent fill and a
-/// hairline border. [highlight] lifts it with an accent tint, for the one
+/// hairline border. [highlight] makes it brighter, clearer glass, for the one
 /// thing on a screen that matters most.
 ///
 /// Wraps a transparent [Card], so ink splashes and `find.byType(Card)` work
@@ -183,26 +185,17 @@ class GlassCard extends StatelessWidget {
     final glass = GlassStyle.of(context);
     final scheme = Theme.of(context).colorScheme;
     final radius = glass.borderRadius;
-    final fill = highlight
-        ? LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.alphaBlend(
-                scheme.primary.withValues(alpha: 0.30),
-                glass.fillHighlight,
-              ),
-              Color.alphaBlend(
-                scheme.primary.withValues(alpha: 0.10),
-                glass.fillColor,
-              ),
-            ],
-          )
-        : LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [glass.fillHighlight, glass.fillColor],
-          );
+    // The highlighted card is simply clearer, brighter glass.
+    final fill = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: highlight
+          ? [
+              glass.fillHighlight,
+              Color.alphaBlend(glass.fillColor, glass.fillHighlight),
+            ]
+          : [glass.fillHighlight, glass.fillColor],
+    );
 
     return Padding(
       padding: margin ?? Theme.of(context).cardTheme.margin ?? EdgeInsets.zero,
@@ -219,8 +212,9 @@ class GlassCard extends StatelessWidget {
               gradient: fill,
               border: Border.all(
                 color: highlight
-                    ? scheme.primary.withValues(alpha: 0.45)
+                    ? scheme.onSurface.withValues(alpha: 0.18)
                     : glass.borderColor,
+                width: highlight ? 1.2 : 1,
               ),
             ),
             child: Card(

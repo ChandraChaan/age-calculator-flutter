@@ -1,47 +1,18 @@
-# Age Calculator – App Icon Assets
+# Age Calculator – App Icon
 
-Modern launcher icon concept for the Age Calculator app using Material 3 colors.
-
-## Design Concept
-
-- **Theme:** Calendar + birthday cake
-- **Primary color:** `#6750A4` (Material 3 purple)
-- **Accent colors:** `#E8DEF8`, `#FFD8E4`, `#FFBA47`
-- **Style:** Flat, rounded, professional, Play Store ready
-
-## Included Assets
+iOS-style glass, no colour: a frosted glass calendar card with a white cake on
+a graphite-to-black gradient.
 
 | File | Purpose |
 |------|---------|
-| `android/app/src/main/res/drawable/ic_launcher_background.xml` | Adaptive icon background |
-| `android/app/src/main/res/drawable/ic_launcher_foreground.xml` | Calendar + cake foreground |
-| `android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` | Android adaptive icon (API 26+) |
+| `android/app/src/main/res/drawable/ic_launcher_background.xml` | Adaptive icon background (gradient + soft light) |
+| `android/app/src/main/res/drawable/ic_launcher_foreground.xml` | Glass card, rings and cake, inside the 66dp safe zone |
+| `android/app/src/main/res/mipmap-*/ic_launcher.png` | Legacy icons for Android 7.x |
+| `store_assets/icon-512.png` | Google Play listing icon |
 
-## Recommended Production Assets
-
-For Play Store submission, also generate:
-
-1. **512×512 PNG** – Play Store listing icon
-2. **1024×500 PNG** – Feature graphic (optional)
-3. **Adaptive icon PNGs** for legacy devices using [Android Asset Studio](https://romannurik.github.io/AndroidAssetStudio/icons-launcher.html)
-
-### Quick generation with ImageMagick (optional)
-
-If you have ImageMagick installed, export the vector concept to PNG:
+The PNGs and all store listing images are rendered by
+`tool/store_assets/render_store_assets_test.dart`:
 
 ```bash
-# From project root — requires a vector-to-PNG tool or design export
+flutter test tool/store_assets/render_store_assets_test.dart
 ```
-
-### Recommended workflow
-
-1. Open the XML foreground/background in Android Studio
-2. Use **File → New → Image Asset** to generate all mipmap densities
-3. Export a 512×512 version for the Play Console
-
-## Play Store Icon Guidelines
-
-- No transparency in store listing icon
-- Keep important content inside the safe zone (center 66%)
-- Use high contrast for small sizes
-- Test on light and dark launchers

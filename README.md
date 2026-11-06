@@ -32,7 +32,7 @@ Built with Material 3, it features responsive layouts, animated result cards, le
 - **Upcoming events** — Birthdays, exams, trips and other dates with live countdowns and a home screen widget
 - **Reminders** — Per-event notifications (at start, 10 min to 1 week before); all-day reminders arrive at 9:00 AM
 - **Import** — Optional, read-only import of contact birthdays/anniversaries and calendar events (nothing leaves the device)
-- **Glass UI** — Frosted-glass Material 3 design in two colours: one violet accent over neutral ink or mist
+- **Glass UI** — iOS-style frosted glass with no accent colour: ink on light grey, or white on black
 - **Dark & Light mode** — AppBar theme toggle with SharedPreferences persistence
 - **Date picker** — Native Flutter date picker with future-date validation
 - **Leap year support** — Correct handling of February 29 birthdays

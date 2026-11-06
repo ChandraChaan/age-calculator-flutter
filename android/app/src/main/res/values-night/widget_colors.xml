@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="widget_surface">#E615122A</color>
-    <color name="widget_stroke">#21FFFFFF</color>
-    <color name="widget_on_surface">#FFF4F2FB</color>
-    <color name="widget_on_surface_variant">#FFB9B5C9</color>
-    <color name="widget_primary">#FFB3A3FF</color>
+    <color name="widget_surface">#E01C1C1E</color>
+    <color name="widget_stroke">#24FFFFFF</color>
+    <color name="widget_on_surface">#FFF2F2F7</color>
+    <color name="widget_on_surface_variant">#FF8E8E93</color>
+    <color name="widget_primary">#FFFFFFFF</color>
 </resources>

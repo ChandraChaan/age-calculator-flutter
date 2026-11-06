@@ -2,17 +2,24 @@ import 'package:agecalculator/widgets/glass.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// The app's two colours: one violet accent over neutral ink (dark) or mist
-/// (light). Everything else is a transparency of these, so cards read as
-/// frosted glass over the backdrop. Red appears only on destructive actions.
+/// iOS-style glass with no colour: near-black ink on light grey (light) and
+/// near-white on true black (dark). Everything else is a transparency of
+/// these, so cards read as frosted glass. Emphasis comes from weight and
+/// size, not hue; red appears only on destructive actions.
 abstract final class AppPalette {
-  static const Color accent = Color(0xFF7C5CFF);
-  static const Color ink = Color(0xFF0B0A14);
-  static const Color mist = Color(0xFFF4F2FB);
+  static const Color ink = Color(0xFF1C1C1E);
+  static const Color mist = Color(0xFFF2F2F7);
+  static const Color black = Color(0xFF000000);
+  static const Color secondaryLight = Color(0xFF6E6E73);
+  static const Color secondaryDark = Color(0xFF8E8E93);
 }
 
 class AppTheme {
   AppTheme._();
+
+  /// Android's system font, named so styles built here never fall back to
+  /// a different default (store screenshots are rendered off-device).
+  static const String fontFamily = 'Roboto';
 
   static ThemeData get lightTheme => _buildTheme(Brightness.light);
 
@@ -21,30 +28,33 @@ class AppTheme {
   static ThemeData _buildTheme(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
     final seeded = ColorScheme.fromSeed(
-      seedColor: AppPalette.accent,
+      seedColor: AppPalette.ink,
       brightness: brightness,
-      dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
+      dynamicSchemeVariant: DynamicSchemeVariant.monochrome,
     );
     final ink = isDark ? AppPalette.mist : AppPalette.ink;
-    final base = isDark ? AppPalette.ink : AppPalette.mist;
-    final primary = isDark ? const Color(0xFFB3A3FF) : const Color(0xFF5B3EE6);
-    // One accent only: secondary and tertiary roles reuse the primary.
+    final base = isDark ? AppPalette.black : AppPalette.mist;
+    // No accent hue: the "primary" is the ink itself.
+    final primary = isDark ? Colors.white : AppPalette.ink;
+    final secondaryText = isDark
+        ? AppPalette.secondaryDark
+        : AppPalette.secondaryLight;
     final colorScheme = seeded.copyWith(
       primary: primary,
-      onPrimary: isDark ? AppPalette.ink : Colors.white,
+      onPrimary: isDark ? AppPalette.black : Colors.white,
       primaryContainer: primary.withValues(alpha: isDark ? 0.28 : 0.16),
       onPrimaryContainer: ink,
       secondary: primary,
-      onSecondary: isDark ? AppPalette.ink : Colors.white,
+      onSecondary: isDark ? AppPalette.black : Colors.white,
       secondaryContainer: primary.withValues(alpha: isDark ? 0.22 : 0.14),
       onSecondaryContainer: ink,
       tertiary: primary,
-      onTertiary: isDark ? AppPalette.ink : Colors.white,
+      onTertiary: isDark ? AppPalette.black : Colors.white,
       tertiaryContainer: primary.withValues(alpha: isDark ? 0.22 : 0.14),
       onTertiaryContainer: ink,
       surface: base,
       onSurface: ink,
-      onSurfaceVariant: ink.withValues(alpha: 0.68),
+      onSurfaceVariant: secondaryText,
       outline: ink.withValues(alpha: 0.28),
       outlineVariant: ink.withValues(alpha: 0.14),
       surfaceContainerLowest: Color.alphaBlend(
@@ -64,10 +74,11 @@ class AppTheme {
     final fieldRadius = BorderRadius.circular(18);
     final textTheme =
         (isDark ? Typography.whiteMountainView : Typography.blackMountainView)
-            .apply(bodyColor: ink, displayColor: ink);
+            .apply(bodyColor: ink, displayColor: ink, fontFamily: fontFamily);
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: fontFamily,
       brightness: brightness,
       colorScheme: colorScheme,
       textTheme: textTheme.copyWith(
@@ -101,6 +112,7 @@ class AppTheme {
             (isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
                 .copyWith(statusBarColor: Colors.transparent),
         titleTextStyle: TextStyle(
+          fontFamily: AppTheme.fontFamily,
           fontSize: 24,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.4,
@@ -130,6 +142,7 @@ class AppTheme {
         ),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
+            fontFamily: AppTheme.fontFamily,
             fontSize: 12,
             fontWeight: states.contains(WidgetState.selected)
                 ? FontWeight.w700
@@ -155,7 +168,11 @@ class AppTheme {
           backgroundColor: primary,
           foregroundColor: colorScheme.onPrimary,
           shape: const StadiumBorder(),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -165,13 +182,20 @@ class AppTheme {
           backgroundColor: glass.fillColor,
           side: BorderSide(color: glass.borderColor),
           shape: const StadiumBorder(),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primary,
-          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -200,7 +224,11 @@ class AppTheme {
         selectedColor: primary.withValues(alpha: isDark ? 0.32 : 0.2),
         side: BorderSide(color: glass.borderColor),
         shape: const StadiumBorder(),
-        labelStyle: TextStyle(color: ink, fontWeight: FontWeight.w500),
+        labelStyle: TextStyle(
+          fontFamily: AppTheme.fontFamily,
+          color: ink,
+          fontWeight: FontWeight.w500,
+        ),
         checkmarkColor: ink,
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
@@ -257,10 +285,11 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: isDark ? AppPalette.mist : AppPalette.ink,
-        contentTextStyle: TextStyle(color: base),
-        actionTextColor: isDark
-            ? const Color(0xFF5B3EE6)
-            : const Color(0xFFB3A3FF),
+        contentTextStyle: TextStyle(
+          fontFamily: AppTheme.fontFamily,
+          color: base,
+        ),
+        actionTextColor: isDark ? AppPalette.ink : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
