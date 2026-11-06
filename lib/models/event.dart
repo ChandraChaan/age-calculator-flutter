@@ -25,6 +25,7 @@ class EventSource {
     required this.kind,
     required this.externalId,
     this.yearKnown = true,
+    this.group,
   });
 
   final EventSourceKind kind;
@@ -36,6 +37,10 @@ class EventSource {
   /// is then only a placeholder and no age is shown.
   final bool yearKnown;
 
+  /// The calendar's display name for calendar imports; `null` for contacts
+  /// and for events imported before groups were recorded.
+  final String? group;
+
   /// [kind] and [externalId] joined; unique across all sources.
   String get key => '${kind.name}:$externalId';
 
@@ -44,11 +49,12 @@ class EventSource {
     return other is EventSource &&
         other.kind == kind &&
         other.externalId == externalId &&
-        other.yearKnown == yearKnown;
+        other.yearKnown == yearKnown &&
+        other.group == group;
   }
 
   @override
-  int get hashCode => Object.hash(kind, externalId, yearKnown);
+  int get hashCode => Object.hash(kind, externalId, yearKnown, group);
 
   @override
   String toString() => 'EventSource($key${yearKnown ? '' : ', no year'})';
@@ -114,7 +120,9 @@ class Event {
     required this.updatedAt,
     List<int> reminders = const [],
     this.source,
+    List<CivilDate> skippedDates = const [],
   }) : reminders = normalizeReminders(reminders),
+       skippedDates = _normalizeDates(skippedDates),
        assert(id.isNotEmpty, 'id must not be empty'),
        assert(title.trim().isNotEmpty, 'title must not be blank'),
        assert(createdAt.isUtc, 'createdAt must be UTC'),
@@ -141,6 +149,12 @@ class Event {
   /// Set when the event was imported from contacts or the calendar.
   final EventSource? source;
 
+  /// Dates of a repeating event the user removed ("delete this date only").
+  /// Sorted, unique, unmodifiable.
+  final List<CivilDate> skippedDates;
+
+  bool isSkipped(CivilDate date) => skippedDates.contains(date);
+
   bool get isAllDay => time == null;
 
   /// `false` only for an imported birthday without a year.
@@ -161,6 +175,7 @@ class Event {
     DateTime? updatedAt,
     List<int>? reminders,
     Object? source = _unchanged,
+    List<CivilDate>? skippedDates,
   }) {
     return Event(
       id: id ?? this.id,
@@ -177,6 +192,7 @@ class Event {
       source: identical(source, _unchanged)
           ? this.source
           : source as EventSource?,
+      skippedDates: skippedDates ?? this.skippedDates,
     );
   }
 
@@ -194,7 +210,8 @@ class Event {
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt &&
         _sameInts(other.reminders, reminders) &&
-        other.source == source;
+        other.source == source &&
+        _sameDates(other.skippedDates, skippedDates);
   }
 
   @override
@@ -211,6 +228,7 @@ class Event {
     updatedAt,
     Object.hashAll(reminders),
     source,
+    Object.hashAll(skippedDates),
   );
 
   @override
@@ -237,3 +255,20 @@ bool _sameInts(List<int> a, List<int> b) {
   }
   return true;
 }
+
+bool _sameDates(List<CivilDate> a, List<CivilDate> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
+}
+
+List<CivilDate> _normalizeDates(Iterable<CivilDate> dates) {
+  final unique = dates.toSet().toList()..sort();
+  return List.unmodifiable(unique);
+}
+
+/// The title as compared for duplicates: case and spacing ignored.
+String normalizedTitle(String title) =>
+    title.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');

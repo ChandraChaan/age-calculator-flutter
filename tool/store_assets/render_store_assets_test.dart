@@ -730,7 +730,7 @@ Future<void> _renderScreens(WidgetTester tester) async {
     '$_out/${_device.dir}/05-dark.png',
     dark: true,
     title: 'Glass, in light\nand dark',
-    subtitle: 'Private, offline, no account.',
+    subtitle: 'Private, and no account needed.',
   );
 
   // 6. Settings, light.

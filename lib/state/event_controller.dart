@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:agecalculator/data/event_storage.dart';
+import 'package:agecalculator/engine/civil_date.dart';
+import 'package:agecalculator/engine/recurrence.dart';
 import 'package:agecalculator/engine/upcoming_planner.dart';
 import 'package:agecalculator/models/event.dart';
 import 'package:flutter/foundation.dart';
@@ -64,7 +66,7 @@ class EventController extends ChangeNotifier {
   /// The upcoming plan for the current events as of [now] (default: the
   /// clock).
   UpcomingPlan upcomingPlan({DateTime? now}) {
-    return planUpcoming(_events, now ?? _clock());
+    return planUpcoming(_events, now ?? _clock(), hideImportedDuplicates: true);
   }
 
   Future<void> load() {
@@ -178,6 +180,101 @@ class EventController extends ChangeNotifier {
       return true;
     });
   }
+
+  /// Removes the date [date] from repeating event [id] ("delete this date
+  /// only"). Returns `false` if there is no such event or saving failed.
+  Future<bool> skipOccurrence(String id, CivilDate date) {
+    return _serialized(() async {
+      final index = _indexOf(id);
+      if (index < 0) return false;
+      final event = _events[index];
+      if (event.recurrence == Recurrence.none) return false;
+      final next = [..._events];
+      next[index] = event.copyWith(
+        skippedDates: [...event.skippedDates, date],
+        updatedAt: _clock().toUtc(),
+      );
+      return _commit(next);
+    });
+  }
+
+  /// Puts back a date removed by [skipOccurrence].
+  Future<bool> unskipOccurrence(String id, CivilDate date) {
+    return _serialized(() async {
+      final index = _indexOf(id);
+      if (index < 0) return false;
+      final event = _events[index];
+      if (!event.isSkipped(date)) return true;
+      final next = [..._events];
+      next[index] = event.copyWith(
+        skippedDates: event.skippedDates.where((d) => d != date).toList(),
+        updatedAt: _clock().toUtc(),
+      );
+      return _commit(next);
+    });
+  }
+
+  /// Deletes every event in [ids] in one save. Returns what was removed, in
+  /// stored order with positions, for [restoreMany]; `null` if saving
+  /// failed.
+  Future<List<({Event event, int index})>?> deleteMany(Set<String> ids) {
+    return _serialized(() async {
+      final removed = <({Event event, int index})>[];
+      final next = <Event>[];
+      for (var i = 0; i < _events.length; i++) {
+        final event = _events[i];
+        if (ids.contains(event.id)) {
+          removed.add((event: event, index: i));
+        } else {
+          next.add(event);
+        }
+      }
+      if (removed.isEmpty) return removed;
+      return await _commit(next) ? removed : null;
+    });
+  }
+
+  /// Puts back events returned by [deleteMany] at their old positions,
+  /// skipping any whose ID is in use again.
+  Future<bool> restoreMany(List<({Event event, int index})> removed) {
+    return _serialized(() async {
+      final next = [..._events];
+      for (final item in [...removed]..sort((a, b) => a.index - b.index)) {
+        if (next.any((e) => e.id == item.event.id)) continue;
+        next.insert(min(item.index, next.length), item.event);
+      }
+      return _commit(next);
+    });
+  }
+
+  /// IDs of imported events that repeat another event: the same title
+  /// (ignoring case and spacing), next date and time. The user's own events
+  /// are always kept; when only imported copies exist, the active, then the
+  /// oldest one is kept.
+  Set<String> duplicateIds({DateTime? now}) {
+    final at = now ?? _clock();
+    final groups = <String, List<Event>>{};
+    for (final event in _events) {
+      final date = eventCountdown(event, at).date;
+      groups.putIfAbsent(occurrenceKey(event, date), () => []).add(event);
+    }
+    final duplicates = <String>{};
+    for (final group in groups.values) {
+      if (group.length < 2) continue;
+      final imported = group.where((e) => e.source != null).toList()
+        ..sort((a, b) {
+          if (a.enabled != b.enabled) return a.enabled ? -1 : 1;
+          return a.createdAt.compareTo(b.createdAt);
+        });
+      final hasOwn = imported.length < group.length;
+      duplicates.addAll(imported.skip(hasOwn ? 0 : 1).map((e) => e.id));
+    }
+    return duplicates;
+  }
+
+  /// Deletes the events [duplicateIds] finds, for [restoreMany].
+  Future<List<({Event event, int index})>?> removeDuplicates() =>
+      deleteMany(duplicateIds());
 
   /// Removes every event and any recovered backup ([EventStorage.clear]).
   Future<bool> deleteAll() {

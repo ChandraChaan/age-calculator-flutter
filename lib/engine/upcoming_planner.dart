@@ -46,6 +46,7 @@ class UpcomingPlan {
     required this.later,
     required this.passed,
     required this.paused,
+    this.hiddenDuplicates = 0,
   });
 
   /// The earliest upcoming occurrence; not repeated in its section.
@@ -66,6 +67,10 @@ class UpcomingPlan {
   /// Disabled events, oldest first. They have no countdown.
   final List<Event> paused;
 
+  /// Imported occurrences left out because another one has the same title,
+  /// date and time (for example a holiday imported from several calendars).
+  final int hiddenDuplicates;
+
   @override
   bool operator ==(Object other) {
     return other is UpcomingPlan &&
@@ -75,7 +80,8 @@ class UpcomingPlan {
         _listEquals(other.nextSevenDays, nextSevenDays) &&
         _listEquals(other.later, later) &&
         _listEquals(other.passed, passed) &&
-        _listEquals(other.paused, paused);
+        _listEquals(other.paused, paused) &&
+        other.hiddenDuplicates == hiddenDuplicates;
   }
 
   @override
@@ -87,8 +93,66 @@ class UpcomingPlan {
     Object.hashAll(later),
     Object.hashAll(passed),
     Object.hashAll(paused),
+    hiddenDuplicates,
   );
 }
+
+/// The countdown to [event]'s current or next occurrence, passing over the
+/// dates the user removed from a repeating event.
+Countdown eventCountdown(Event event, DateTime now) {
+  var countdown = countdownFor(
+    date: event.date,
+    time: event.time,
+    recurrence: event.recurrence,
+    now: now,
+  );
+  if (event.recurrence == Recurrence.none) return countdown;
+  for (
+    var guard = 0;
+    guard < 1000 && event.isSkipped(countdown.date);
+    guard++
+  ) {
+    final next = firstOccurrenceOnOrAfter(
+      event.date,
+      event.recurrence,
+      countdown.date.addDays(1),
+    );
+    if (next == null) break;
+    countdown = countdownFor(
+      date: next,
+      time: event.time,
+      recurrence: Recurrence.none,
+      now: now,
+    );
+  }
+  return countdown;
+}
+
+/// [occurrences] in their order, leaving out each imported occurrence that
+/// repeats another: one of the user's own with the same [occurrenceKey], or
+/// an earlier imported one. The user's own occurrences are always kept,
+/// even when they repeat each other (a duplicate the user made on purpose).
+List<PlannedOccurrence> withoutImportedDuplicates(
+  List<PlannedOccurrence> occurrences,
+) {
+  final own = {
+    for (final o in occurrences)
+      if (o.event.source == null) occurrenceKey(o.event, o.date),
+  };
+  final seenImported = <String>{};
+  return [
+    for (final o in occurrences)
+      if (o.event.source == null ||
+          (!own.contains(occurrenceKey(o.event, o.date)) &&
+              seenImported.add(occurrenceKey(o.event, o.date))))
+        o,
+  ];
+}
+
+/// Identifies occurrences that are the same thing: title (ignoring case and
+/// spacing), date and time.
+String occurrenceKey(Event event, CivilDate date) =>
+    '${normalizedTitle(event.title)}|$date|${event.time}';
 
 /// Arranges [events] into an [UpcomingPlan] as of [now].
 ///
@@ -96,7 +160,14 @@ class UpcomingPlan {
 /// occurrence's calendar date relative to the local date of [now]. The
 /// result depends only on the inputs and the device time zone, not on the
 /// order of [events].
-UpcomingPlan planUpcoming(List<Event> events, DateTime now) {
+///
+/// With [hideImportedDuplicates], imported occurrences that repeat another
+/// occurrence are left out ([withoutImportedDuplicates]).
+UpcomingPlan planUpcoming(
+  List<Event> events,
+  DateTime now, {
+  bool hideImportedDuplicates = false,
+}) {
   final today = CivilDate.fromDateTime(now.toLocal());
   final upcoming = <PlannedOccurrence>[];
   final passed = <PlannedOccurrence>[];
@@ -107,12 +178,7 @@ UpcomingPlan planUpcoming(List<Event> events, DateTime now) {
       paused.add(event);
       continue;
     }
-    final countdown = countdownFor(
-      date: event.date,
-      time: event.time,
-      recurrence: event.recurrence,
-      now: now,
-    );
+    final countdown = eventCountdown(event, now);
     final occurrence = PlannedOccurrence(
       event: event,
       countdown: countdown,
@@ -130,6 +196,23 @@ UpcomingPlan planUpcoming(List<Event> events, DateTime now) {
   upcoming.sort(_upcomingOrder);
   passed.sort(_passedOrder);
   paused.sort(_pausedOrder);
+
+  var hidden = 0;
+  if (hideImportedDuplicates) {
+    final keptUpcoming = withoutImportedDuplicates(upcoming);
+    final keptPassed = withoutImportedDuplicates(passed);
+    hidden =
+        upcoming.length -
+        keptUpcoming.length +
+        passed.length -
+        keptPassed.length;
+    upcoming
+      ..clear()
+      ..addAll(keptUpcoming);
+    passed
+      ..clear()
+      ..addAll(keptPassed);
+  }
 
   final sections = <List<PlannedOccurrence>>[[], [], [], []];
   for (final occurrence in upcoming.skip(1)) {
@@ -152,6 +235,7 @@ UpcomingPlan planUpcoming(List<Event> events, DateTime now) {
     later: sections[3],
     passed: passed,
     paused: paused,
+    hiddenDuplicates: hidden,
   );
 }
 

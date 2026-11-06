@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="widget_surface">#E01C1C1E</color>
+    <color name="widget_surface">#EB2C2C2E</color>
+    <color name="widget_surface_bottom">#EB111113</color>
     <color name="widget_stroke">#24FFFFFF</color>
+    <color name="widget_row">#14FFFFFF</color>
+    <color name="widget_row_stroke">#1AFFFFFF</color>
     <color name="widget_on_surface">#FFF2F2F7</color>
     <color name="widget_on_surface_variant">#FF8E8E93</color>
     <color name="widget_primary">#FFFFFFFF</color>

@@ -2,6 +2,7 @@ import 'package:agecalculator/data/event_storage.dart';
 import 'package:agecalculator/home_widget/home_widget_sync.dart';
 import 'package:agecalculator/home_widget/widget_launch_action.dart';
 import 'package:agecalculator/screens/app_shell.dart';
+import 'package:agecalculator/services/ads_controller.dart';
 import 'package:agecalculator/services/device_import.dart';
 import 'package:agecalculator/services/reminder_service.dart';
 import 'package:agecalculator/state/event_controller.dart';
@@ -16,6 +17,7 @@ class AgeCalculatorApp extends StatefulWidget {
     this.homeWidgetSync,
     this.reminders,
     this.deviceImport,
+    this.ads,
   });
 
   /// Source of the current time for events; [DateTime.now] when null.
@@ -33,6 +35,10 @@ class AgeCalculatorApp extends StatefulWidget {
   /// only on Android.
   final bool? deviceImport;
 
+  /// Whether ads may be shown; by default only on Android, and only when a
+  /// banner unit is configured (see [AdUnits]).
+  final bool? ads;
+
   @override
   State<AgeCalculatorApp> createState() => _AgeCalculatorAppState();
 }
@@ -45,6 +51,7 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
   HomeWidgetSync? _homeWidget;
   ReminderSync? _reminders;
   DeviceImporter? _importer;
+  AdsController? _ads;
   WidgetLaunchAction? _initialLaunchAction;
   bool _isLoaded = false;
 
@@ -58,6 +65,7 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
   void dispose() {
     _homeWidget?.dispose();
     _reminders?.dispose();
+    _ads?.dispose();
     _events?.dispose();
     super.dispose();
   }
@@ -96,12 +104,15 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
 
     homeWidget.start();
     reminders.start();
+    // After the first frame, so a consent form appears over the app.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ads?.start());
     setState(() {
       _themeMode = _parseThemeMode(saved);
       _events = events;
       _homeWidget = homeWidget;
       _reminders = reminders;
       _importer = DeviceImporter(enabled: widget.deviceImport);
+      _ads = AdsController(enabled: widget.ads);
       _initialLaunchAction = launchAction;
       _isLoaded = true;
     });
@@ -153,6 +164,7 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
               reminderTaps: _reminders?.taps,
               reminders: _reminders,
               importer: _importer,
+              ads: _ads,
             )
           : const _LoadingScreen(),
     );

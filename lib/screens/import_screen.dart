@@ -82,15 +82,16 @@ Future<bool> _explain(BuildContext context, ImportKind kind) async {
       'Import birthdays',
       'Age Calculator will read the birthdays and anniversaries saved in '
           'your contacts so you can choose which to add. It reads nothing '
-          'else, never changes your contacts, and nothing leaves this device.',
+          'else, never changes your contacts, and your contacts never leave '
+          'this device.',
     ),
     ImportKind.calendar => (
       Icons.event_rounded,
       'Import calendar events',
       'Age Calculator will read your calendar events for the next '
           '${DeviceImporter.calendarDays ~/ 30} months so you can choose '
-          'which to count down to. It never changes your calendar, and '
-          'nothing leaves this device.',
+          'which to count down to. It never changes your calendar, and your '
+          'calendar data never leaves this device.',
     ),
   };
   final result = await showDialog<bool>(
@@ -171,6 +172,40 @@ class _ImportScreenState extends State<ImportScreen> {
     for (final c in _candidates ?? const <ImportCandidate>[])
       if (!c.alreadyImported) c,
   ];
+
+  /// `true` when every available member is selected, `false` when none
+  /// is, otherwise `null`.
+  bool? _groupValue(List<ImportCandidate> members) {
+    final open = members.where((c) => !c.alreadyImported).toList();
+    if (open.isEmpty) return true;
+    final picked = open.where((c) => _selected.contains(c.key)).length;
+    if (picked == 0) return false;
+    return picked == open.length ? true : null;
+  }
+
+  /// Selects or clears every repeating (or one-time) event at once.
+  Widget _kindChip(List<ImportCandidate> available, {required bool repeats}) {
+    final members = available.where((c) => c.repeats == repeats).toList();
+    final on =
+        members.isNotEmpty && members.every((c) => _selected.contains(c.key));
+    return FilterChip(
+      avatar: Icon(repeats ? Icons.repeat_rounded : Icons.event_rounded),
+      label: Text('${repeats ? 'Repeating' : 'One-time'} · ${members.length}'),
+      selected: on,
+      showCheckmark: false,
+      onSelected: members.isEmpty
+          ? null
+          : (value) => setState(() {
+              for (final c in members) {
+                if (value) {
+                  _selected.add(c.key);
+                } else {
+                  _selected.remove(c.key);
+                }
+              }
+            }),
+    );
+  }
 
   Future<void> _import() async {
     final picked = [
@@ -282,33 +317,116 @@ class _ImportScreenState extends State<ImportScreen> {
                   }),
                 ),
               ),
+            if (widget.kind == ImportKind.calendar && available.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _kindChip(available, repeats: true),
+                  _kindChip(available, repeats: false),
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
-            for (final candidate in candidates)
-              GlassCard(
-                child: CheckboxListTile(
-                  secondary: EventCategoryBadge(
-                    category: candidate.draft.category,
-                  ),
-                  title: Text(candidate.draft.title),
-                  subtitle: Text(
-                    candidate.alreadyImported
-                        ? 'Already added'
-                        : _candidateSubtitle(context, candidate),
-                  ),
-                  value: candidate.alreadyImported
-                      ? true
-                      : _selected.contains(candidate.key),
-                  onChanged: candidate.alreadyImported
+            for (final MapEntry(key: group, value: members) in _groups(
+              candidates,
+            ).entries) ...[
+              if (widget.kind == ImportKind.calendar)
+                _GroupHeader(
+                  title: group,
+                  count: members.length,
+                  value: _groupValue(members),
+                  onChanged: members.every((c) => c.alreadyImported)
                       ? null
                       : (value) => setState(() {
-                          if (value == true) {
-                            _selected.add(candidate.key);
-                          } else {
-                            _selected.remove(candidate.key);
+                          for (final c in members) {
+                            if (c.alreadyImported) continue;
+                            if (value == true) {
+                              _selected.add(c.key);
+                            } else {
+                              _selected.remove(c.key);
+                            }
                           }
                         }),
                 ),
+              for (final candidate in members)
+                GlassCard(
+                  child: CheckboxListTile(
+                    secondary: EventCategoryBadge(
+                      category: candidate.draft.category,
+                    ),
+                    title: Text(candidate.draft.title),
+                    subtitle: Text(
+                      candidate.alreadyImported
+                          ? 'Already added'
+                          : _candidateSubtitle(context, candidate),
+                    ),
+                    value: candidate.alreadyImported
+                        ? true
+                        : _selected.contains(candidate.key),
+                    onChanged: candidate.alreadyImported
+                        ? null
+                        : (value) => setState(() {
+                            if (value == true) {
+                              _selected.add(candidate.key);
+                            } else {
+                              _selected.remove(candidate.key);
+                            }
+                          }),
+                  ),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Candidates by calendar (or one "Contacts" group), in first-seen order.
+Map<String, List<ImportCandidate>> _groups(List<ImportCandidate> all) {
+  final groups = <String, List<ImportCandidate>>{};
+  for (final c in all) {
+    groups.putIfAbsent(c.group, () => []).add(c);
+  }
+  return groups;
+}
+
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader({
+    required this.title,
+    required this.count,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final int count;
+  final bool? value;
+  final ValueChanged<bool?>? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 16, 4, 4),
+      child: MergeSemantics(
+        child: Row(
+          children: [
+            Expanded(
+              child: Semantics(
+                header: true,
+                child: Text(
+                  '$title · $count',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
+            ),
+            Checkbox(tristate: true, value: value, onChanged: onChanged),
           ],
         ),
       ),

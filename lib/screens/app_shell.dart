@@ -10,9 +10,11 @@ import 'package:agecalculator/screens/home_screen.dart';
 import 'package:agecalculator/screens/import_screen.dart';
 import 'package:agecalculator/screens/settings_screen.dart';
 import 'package:agecalculator/screens/upcoming_screen.dart';
+import 'package:agecalculator/services/ads_controller.dart';
 import 'package:agecalculator/services/device_import.dart';
 import 'package:agecalculator/services/reminder_service.dart';
 import 'package:agecalculator/state/event_controller.dart';
+import 'package:agecalculator/widgets/ad_banner.dart';
 import 'package:agecalculator/widgets/glass.dart';
 import 'package:flutter/material.dart';
 
@@ -32,6 +34,7 @@ class AppShell extends StatefulWidget {
     this.reminderTaps,
     this.reminders,
     this.importer,
+    this.ads,
   });
 
   final EventController events;
@@ -54,6 +57,9 @@ class AppShell extends StatefulWidget {
 
   /// Contact and calendar import; `null` when unavailable.
   final DeviceImporter? importer;
+
+  /// Banner ads on the Upcoming and Age tabs; `null` for none.
+  final AdsController? ads;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -200,6 +206,7 @@ class _AppShellState extends State<AppShell> {
         events: widget.events,
         reminders: widget.reminders?.enabled == true ? widget.reminders : null,
         importer: _importer?.enabled == true ? _importer : null,
+        ads: widget.ads,
         clock: widget.clock,
         themeMode: widget.themeMode,
         onThemeChanged: widget.onThemeChanged,
@@ -217,24 +224,31 @@ class _AppShellState extends State<AppShell> {
         ],
       ),
       bottomNavigationBar: GlassBar(
-        child: NavigationBar(
-          selectedIndex: _tab.index,
-          onDestinationSelected: (index) => _select(AppTab.values[index]),
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.event_note_outlined),
-              selectedIcon: Icon(Icons.event_note),
-              label: 'Upcoming',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.cake_outlined),
-              selectedIcon: Icon(Icons.cake),
-              label: 'Age',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.settings_outlined),
-              selectedIcon: Icon(Icons.settings),
-              label: 'Settings',
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Calm, read-only tabs only; collapses when there is no ad.
+            if (_tab != AppTab.settings) AdBanner(ads: widget.ads),
+            NavigationBar(
+              selectedIndex: _tab.index,
+              onDestinationSelected: (index) => _select(AppTab.values[index]),
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.event_note_outlined),
+                  selectedIcon: Icon(Icons.event_note),
+                  label: 'Upcoming',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.cake_outlined),
+                  selectedIcon: Icon(Icons.cake),
+                  label: 'Age',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.settings_outlined),
+                  selectedIcon: Icon(Icons.settings),
+                  label: 'Settings',
+                ),
+              ],
             ),
           ],
         ),

@@ -44,6 +44,24 @@ jobs:
           flutter-version: 3.44.5
           cache: true
       - run: flutter pub get
+      # Install the NDK Flutter's Android build uses up front, retrying, so a
+      # corrupted on-demand download by Gradle cannot fail the build.
+      - name: Install Android NDK
+        run: |
+          root="${FLUTTER_ROOT:-$(dirname "$(dirname "$(which flutter)")")}"
+          ndk=$(grep -oE 'val ndkVersion: String = "[^"]+"' \
+            "$root/packages/flutter_tools/gradle/src/main/kotlin/FlutterExtension.kt" \
+            | grep -oE '[0-9][0-9.]+' | head -1)
+          test -n "$ndk"
+          echo "NDK $ndk"
+          sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          for attempt in 1 2 3; do
+            yes | "$sdkmanager" --install "ndk;$ndk" > /dev/null && break
+            echo "NDK install attempt $attempt failed; retrying"
+            rm -rf "$ANDROID_HOME/ndk/$ndk"
+            sleep 15
+          done
+          test -f "$ANDROID_HOME/ndk/$ndk/source.properties"
       # Generates the Gradle wrapper, which is not committed.
       - run: flutter build apk --config-only
       - name: Android unit tests

@@ -141,4 +141,43 @@ class WidgetLogicTest {
         )
         return candidates.first { it.exists() }
     }
+
+    @Test
+    fun everyWidgetSizeHasALayoutThatFits() {
+        // Typical launcher cells: about 57-73dp wide and 50-100dp tall.
+        assertEquals(WidgetLayoutSpec(WidgetForm.TINY), WidgetSizes.specFor(57, 50))
+        assertEquals(WidgetLayoutSpec(WidgetForm.TINY), WidgetSizes.specFor(73, 180))
+        assertEquals(WidgetLayoutSpec(WidgetForm.TINY), WidgetSizes.specFor(140, 60))
+        assertEquals(WidgetLayoutSpec(WidgetForm.STRIP), WidgetSizes.specFor(300, 60))
+        assertEquals(WidgetLayoutSpec(WidgetForm.CARD), WidgetSizes.specFor(140, 150))
+        assertEquals(WidgetLayoutSpec(WidgetForm.COLUMN, 3), WidgetSizes.specFor(140, 190))
+        assertEquals(WidgetLayoutSpec(WidgetForm.COLUMN, 6), WidgetSizes.specFor(140, 700))
+        assertEquals(WidgetLayoutSpec(WidgetForm.LIST, 2), WidgetSizes.specFor(380, 152))
+        assertEquals(WidgetLayoutSpec(WidgetForm.LIST, 6), WidgetSizes.specFor(380, 700))
+    }
+
+    @Test
+    fun breakpointsStartWhereTheirLayoutStarts() {
+        val points = WidgetSizes.breakpoints()
+        assertEquals(points.size, points.toSet().size)
+        for ((w, h) in points) {
+            // Each breakpoint's own size is within that layout's range.
+            val spec = WidgetSizes.specFor(w, h)
+            val oneLess = WidgetSizes.specFor(w, h - 1)
+            if (spec.form == WidgetForm.LIST || spec.form == WidgetForm.COLUMN) {
+                assert(oneLess.rows < spec.rows || oneLess.form != spec.form) { "$w x $h" }
+            }
+        }
+    }
+
+    @Test
+    fun repeatingEventsShowOnceAtTheirNextOccurrence() {
+        val snapshot = WidgetSnapshot.parse(
+            """{"schemaVersion":1,"eventCount":2,"validThrough":"2026-07-15","occurrences":[{"eventId":"gym","title":"Gym","date":"2026-06-16","time":"07:00"},{"eventId":"gym","title":"Gym","date":"2026-06-23","time":"07:00"},{"eventId":"b","title":"B","date":"2026-06-25"}]}""",
+        )
+        val now = java.util.GregorianCalendar(utc).apply { clear(); set(2026, 5, 15, 12, 0) }.timeInMillis
+        val view = WidgetContent.build(snapshot, now, utc, WidgetContent.LARGE)
+        assertEquals(listOf("Gym", "B"), view.items.map { it.title })
+        assertEquals(CivilDate(2026, 6, 16), view.items[0].date)
+    }
 }
