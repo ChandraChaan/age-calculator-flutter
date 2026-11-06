@@ -143,12 +143,31 @@ class WidgetLogicTest {
     }
 
     @Test
-    fun widgetRowsFitTheHeight() {
-        assertEquals(1, WidgetRenderer.rowsFor(110))
-        assertEquals(2, WidgetRenderer.rowsFor(152))
-        assertEquals(3, WidgetRenderer.rowsFor(200))
-        assertEquals(5, WidgetRenderer.rowsFor(600))
-        assertEquals(1, WidgetRenderer.rowsFor(0))
+    fun everyWidgetSizeHasALayoutThatFits() {
+        // Typical launcher cells: about 57-73dp wide and 50-100dp tall.
+        assertEquals(WidgetLayoutSpec(WidgetForm.TINY), WidgetSizes.specFor(57, 50))
+        assertEquals(WidgetLayoutSpec(WidgetForm.TINY), WidgetSizes.specFor(73, 180))
+        assertEquals(WidgetLayoutSpec(WidgetForm.TINY), WidgetSizes.specFor(140, 60))
+        assertEquals(WidgetLayoutSpec(WidgetForm.STRIP), WidgetSizes.specFor(300, 60))
+        assertEquals(WidgetLayoutSpec(WidgetForm.CARD), WidgetSizes.specFor(140, 150))
+        assertEquals(WidgetLayoutSpec(WidgetForm.COLUMN, 3), WidgetSizes.specFor(140, 190))
+        assertEquals(WidgetLayoutSpec(WidgetForm.COLUMN, 6), WidgetSizes.specFor(140, 700))
+        assertEquals(WidgetLayoutSpec(WidgetForm.LIST, 2), WidgetSizes.specFor(380, 152))
+        assertEquals(WidgetLayoutSpec(WidgetForm.LIST, 6), WidgetSizes.specFor(380, 700))
+    }
+
+    @Test
+    fun breakpointsStartWhereTheirLayoutStarts() {
+        val points = WidgetSizes.breakpoints()
+        assertEquals(points.size, points.toSet().size)
+        for ((w, h) in points) {
+            // Each breakpoint's own size is within that layout's range.
+            val spec = WidgetSizes.specFor(w, h)
+            val oneLess = WidgetSizes.specFor(w, h - 1)
+            if (spec.form == WidgetForm.LIST || spec.form == WidgetForm.COLUMN) {
+                assert(oneLess.rows < spec.rows || oneLess.form != spec.form) { "$w x $h" }
+            }
+        }
     }
 
     @Test

@@ -70,7 +70,7 @@ data class WidgetView(
 object WidgetContent {
     const val SMALL = 1
     const val MEDIUM = 3
-    const val LARGE = 5
+    const val LARGE = WidgetSizes.MAX_ROWS
 
     fun build(
         snapshot: WidgetSnapshot?,

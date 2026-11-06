@@ -13,4 +13,10 @@
     <dimen name="widget_row_when_text">12sp</dimen>
     <dimen name="widget_row_countdown_text">15sp</dimen>
     <dimen name="widget_row_corner">16dp</dimen>
+    <dimen name="widget_column_header_text">15sp</dimen>
+    <dimen name="widget_column_title_text">13sp</dimen>
+    <dimen name="widget_column_countdown_text">13sp</dimen>
+    <dimen name="widget_tiny_countdown_text">17sp</dimen>
+    <dimen name="widget_tiny_title_text">11sp</dimen>
+    <dimen name="widget_strip_countdown_text">18sp</dimen>
 </resources>
