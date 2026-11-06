@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/app_driver.dart';
 import 'support/upcoming_fixtures.dart';
+import 'package:agecalculator/widgets/glass.dart';
 
 class _Hooks {
   final opened = <Event>[];
@@ -430,13 +431,11 @@ void main() {
     testWidgets('the next event stands out from the list', (tester) async {
       await _showMixed(tester);
 
-      final colors = Theme.of(
-        tester.element(find.byType(UpcomingScreen)),
-      ).colorScheme;
-      final hero = tester.widget<Card>(_card("Mom's birthday"));
-      final tile = tester.widget<Card>(_card('Project review'));
-      expect(hero.color, colors.primaryContainer);
-      expect(tile.color, isNull);
+      GlassCard glassOf(String title) => tester.widget<GlassCard>(
+        find.ancestor(of: find.text(title), matching: find.byType(GlassCard)),
+      );
+      expect(glassOf("Mom's birthday").highlight, isTrue);
+      expect(glassOf('Project review').highlight, isFalse);
     });
 
     testWidgets('paused tiles are dimmed; others are not', (tester) async {

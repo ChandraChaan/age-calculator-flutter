@@ -1,7 +1,8 @@
 import 'package:agecalculator/models/event.dart';
 import 'package:flutter/material.dart';
 
-enum _Accent { primary, secondary, tertiary, neutral }
+// One accent for every category; "Other" stays neutral.
+enum _Accent { primary, neutral }
 
 /// The icon, label and accent colour that represent an event category.
 class EventCategoryStyle {
@@ -17,12 +18,12 @@ class EventCategoryStyle {
       EventCategory.anniversary => const EventCategoryStyle._(
         Icons.favorite_rounded,
         'Anniversary',
-        _Accent.tertiary,
+        _Accent.primary,
       ),
       EventCategory.travel => const EventCategoryStyle._(
         Icons.flight_takeoff_rounded,
         'Travel',
-        _Accent.secondary,
+        _Accent.primary,
       ),
       EventCategory.exam => const EventCategoryStyle._(
         Icons.school_rounded,
@@ -32,12 +33,12 @@ class EventCategoryStyle {
       EventCategory.meeting => const EventCategoryStyle._(
         Icons.groups_rounded,
         'Meeting',
-        _Accent.secondary,
+        _Accent.primary,
       ),
       EventCategory.event => const EventCategoryStyle._(
         Icons.event_rounded,
         'Event',
-        _Accent.tertiary,
+        _Accent.primary,
       ),
       EventCategory.importantDate => const EventCategoryStyle._(
         Icons.star_rounded,
@@ -59,8 +60,6 @@ class EventCategoryStyle {
   Color color(ColorScheme scheme) {
     return switch (_accent) {
       _Accent.primary => scheme.primary,
-      _Accent.secondary => scheme.secondary,
-      _Accent.tertiary => scheme.tertiary,
       _Accent.neutral => scheme.onSurfaceVariant,
     };
   }
@@ -79,8 +78,9 @@ class EventCategoryBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Icon(
         style.icon,

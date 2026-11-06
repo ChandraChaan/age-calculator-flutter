@@ -94,6 +94,28 @@ class EventController extends ChangeNotifier {
     });
   }
 
+  /// Saves every draft in one go, each with a fresh ID and timestamps.
+  /// Returns the saved events, or `null` if saving failed (nothing is then
+  /// added).
+  Future<List<Event>?> addAll(List<Event> drafts) {
+    return _serialized(() async {
+      if (drafts.isEmpty) return const <Event>[];
+      final now = _clock().toUtc();
+      final next = [..._events];
+      final added = <Event>[];
+      for (final draft in drafts) {
+        final event = draft.copyWith(
+          id: _uniqueIdAmong(next),
+          createdAt: now,
+          updatedAt: now,
+        );
+        next.add(event);
+        added.add(event);
+      }
+      return await _commit(next) ? List<Event>.unmodifiable(added) : null;
+    });
+  }
+
   /// Replaces the stored event with the same ID. Keeps its `createdAt` and
   /// sets `updatedAt` to now. Returns `false` if there is no such event or
   /// saving failed.
@@ -183,7 +205,13 @@ class EventController extends ChangeNotifier {
       throw ArgumentError.value(id, 'id', 'no event with this id');
     }
     final now = _clock().toUtc();
-    return original.copyWith(id: _uniqueId(), createdAt: now, updatedAt: now);
+    // A copy is the user's own event, not the imported record.
+    return original.copyWith(
+      id: _uniqueId(),
+      createdAt: now,
+      updatedAt: now,
+      source: null,
+    );
   }
 
   @override
@@ -217,10 +245,12 @@ class EventController extends ChangeNotifier {
 
   int _indexOf(String id) => _events.indexWhere((event) => event.id == id);
 
-  String _uniqueId() {
+  String _uniqueId() => _uniqueIdAmong(_events);
+
+  String _uniqueIdAmong(List<Event> events) {
     for (var attempt = 0; attempt < 1000; attempt++) {
       final id = _newId();
-      if (id.isNotEmpty && _indexOf(id) < 0) return id;
+      if (id.isNotEmpty && !events.any((event) => event.id == id)) return id;
     }
     throw StateError('Could not generate a unique event id');
   }

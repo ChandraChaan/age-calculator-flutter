@@ -223,6 +223,43 @@ void main() {
       expect(decoded.createdAt.isUtc, isTrue);
     });
 
+    test('reminders and import source round-trip', () {
+      final event = _event().copyWith(
+        reminders: const [ReminderLeads.oneDay, ReminderLeads.atStart],
+        source: const EventSource(
+          kind: EventSourceKind.contact,
+          externalId: '42:birthday',
+          yearKnown: false,
+        ),
+      );
+      expect(event.reminders, [0, 1440], reason: 'sorted on creation');
+      final json = _codec.encodeEvent(event);
+      expect(json['reminders'], [0, 1440]);
+      expect(json['source'], {
+        'kind': 'contact',
+        'id': '42:birthday',
+        'yearKnown': false,
+      });
+      expect(_codec.decodeEvent(json), event);
+    });
+
+    test('events without reminders or source keep the v1 shape', () {
+      final json = _codec.encodeEvent(_event());
+      expect(json.containsKey('reminders'), isFalse);
+      expect(json.containsKey('source'), isFalse);
+    });
+
+    test('unreadable reminders or source are dropped, not the event', () {
+      final json = {
+        ..._codec.encodeEvent(_event()),
+        'reminders': ['soon', -5, 60, 60],
+        'source': {'kind': 'fax', 'id': '1'},
+      };
+      final decoded = _codec.decodeEvent(json)!;
+      expect(decoded.reminders, [60]);
+      expect(decoded.source, isNull);
+    });
+
     test('an empty list round-trips', () {
       final raw = _codec.encodeDocument(const []);
       expect(raw, '{"schemaVersion":1,"events":[]}');

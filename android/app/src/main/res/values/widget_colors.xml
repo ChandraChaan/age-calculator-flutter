@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- iOS-style glass, no colour: ink on light grey (light), white on black (dark). -->
 <resources>
-    <color name="widget_surface">#FFFEF7FF</color>
-    <color name="widget_on_surface">#FF1D1B20</color>
-    <color name="widget_on_surface_variant">#FF49454F</color>
-    <color name="widget_primary">#FF6750A4</color>
+    <color name="widget_surface">#E0F2F2F7</color>
+    <color name="widget_stroke">#F2FFFFFF</color>
+    <color name="widget_on_surface">#FF1C1C1E</color>
+    <color name="widget_on_surface_variant">#FF6E6E73</color>
+    <color name="widget_primary">#FF1C1C1E</color>
 </resources>

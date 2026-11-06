@@ -1,6 +1,7 @@
 package com.chandra.agecalculator
 
 import android.content.Intent
+import com.chandra.agecalculator.deviceimport.DeviceImport
 import com.chandra.agecalculator.widget.UpcomingWidgetProvider
 import com.chandra.agecalculator.widget.WidgetLaunch
 import com.chandra.agecalculator.widget.WidgetSnapshot
@@ -10,8 +11,12 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    private var deviceImport: DeviceImport? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        deviceImport?.dispose()
+        deviceImport = DeviceImport(this, flutterEngine.dartExecutor.binaryMessenger)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, WidgetLaunch.CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -34,6 +39,22 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        deviceImport?.dispose()
+        deviceImport = null
+        super.cleanUpFlutterEngine(flutterEngine)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray,
+    ) {
+        if (deviceImport?.onRequestPermissionsResult(requestCode, grantResults) != true) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

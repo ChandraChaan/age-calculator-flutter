@@ -1,69 +1,296 @@
+import 'package:agecalculator/widgets/glass.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+/// iOS-style glass with no colour: near-black ink on light grey (light) and
+/// near-white on true black (dark). Everything else is a transparency of
+/// these, so cards read as frosted glass. Emphasis comes from weight and
+/// size, not hue; red appears only on destructive actions.
+abstract final class AppPalette {
+  static const Color ink = Color(0xFF1C1C1E);
+  static const Color mist = Color(0xFFF2F2F7);
+  static const Color black = Color(0xFF000000);
+  static const Color secondaryLight = Color(0xFF6E6E73);
+  static const Color secondaryDark = Color(0xFF8E8E93);
+}
 
 class AppTheme {
   AppTheme._();
 
-  static const Color _seedColor = Color(0xFF6750A4);
+  /// Android's system font, named so styles built here never fall back to
+  /// a different default (store screenshots are rendered off-device).
+  static const String fontFamily = 'Roboto';
 
   static ThemeData get lightTheme => _buildTheme(Brightness.light);
 
   static ThemeData get darkTheme => _buildTheme(Brightness.dark);
 
   static ThemeData _buildTheme(Brightness brightness) {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: _seedColor,
+    final isDark = brightness == Brightness.dark;
+    final seeded = ColorScheme.fromSeed(
+      seedColor: AppPalette.ink,
       brightness: brightness,
+      dynamicSchemeVariant: DynamicSchemeVariant.monochrome,
     );
-
-    final outlineAlpha = brightness == Brightness.light ? 0.5 : 0.3;
+    final ink = isDark ? AppPalette.mist : AppPalette.ink;
+    final base = isDark ? AppPalette.black : AppPalette.mist;
+    // No accent hue: the "primary" is the ink itself.
+    final primary = isDark ? Colors.white : AppPalette.ink;
+    final secondaryText = isDark
+        ? AppPalette.secondaryDark
+        : AppPalette.secondaryLight;
+    final colorScheme = seeded.copyWith(
+      primary: primary,
+      onPrimary: isDark ? AppPalette.black : Colors.white,
+      primaryContainer: primary.withValues(alpha: isDark ? 0.28 : 0.16),
+      onPrimaryContainer: ink,
+      secondary: primary,
+      onSecondary: isDark ? AppPalette.black : Colors.white,
+      secondaryContainer: primary.withValues(alpha: isDark ? 0.22 : 0.14),
+      onSecondaryContainer: ink,
+      tertiary: primary,
+      onTertiary: isDark ? AppPalette.black : Colors.white,
+      tertiaryContainer: primary.withValues(alpha: isDark ? 0.22 : 0.14),
+      onTertiaryContainer: ink,
+      surface: base,
+      onSurface: ink,
+      onSurfaceVariant: secondaryText,
+      outline: ink.withValues(alpha: 0.28),
+      outlineVariant: ink.withValues(alpha: 0.14),
+      surfaceContainerLowest: Color.alphaBlend(
+        ink.withValues(alpha: 0.02),
+        base,
+      ),
+      surfaceContainerLow: Color.alphaBlend(ink.withValues(alpha: 0.04), base),
+      surfaceContainer: Color.alphaBlend(ink.withValues(alpha: 0.06), base),
+      surfaceContainerHigh: Color.alphaBlend(ink.withValues(alpha: 0.09), base),
+      surfaceContainerHighest: Color.alphaBlend(
+        ink.withValues(alpha: 0.12),
+        base,
+      ),
+      surfaceTint: Colors.transparent,
+    );
+    final glass = GlassStyle.forBrightness(brightness, colorScheme);
+    final fieldRadius = BorderRadius.circular(18);
+    final textTheme =
+        (isDark ? Typography.whiteMountainView : Typography.blackMountainView)
+            .apply(bodyColor: ink, displayColor: ink, fontFamily: fontFamily);
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: fontFamily,
+      brightness: brightness,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.surface,
+      textTheme: textTheme.copyWith(
+        headlineMedium: textTheme.headlineMedium?.copyWith(letterSpacing: -0.5),
+        headlineSmall: textTheme.headlineSmall?.copyWith(letterSpacing: -0.3),
+        titleLarge: textTheme.titleLarge?.copyWith(letterSpacing: -0.2),
+      ),
+      extensions: [glass],
+      // Pages paint their own backdrop (see GlassPageTransitionsBuilder).
+      scaffoldBackgroundColor: Colors.transparent,
+      canvasColor: base,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: GlassPageTransitionsBuilder(),
+          TargetPlatform.iOS: GlassPageTransitionsBuilder(),
+          TargetPlatform.macOS: GlassPageTransitionsBuilder(),
+          TargetPlatform.linux: GlassPageTransitionsBuilder(),
+          TargetPlatform.windows: GlassPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: GlassPageTransitionsBuilder(),
+        },
+      ),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: colorScheme.surface,
-        foregroundColor: colorScheme.onSurface,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: ink,
+        // Dark status bar icons on the light backdrop, light on the dark.
+        systemOverlayStyle:
+            (isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+                .copyWith(statusBarColor: Colors.transparent),
         titleTextStyle: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-          color: colorScheme.onSurface,
+          fontFamily: AppTheme.fontFamily,
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.4,
+          color: ink,
         ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: outlineAlpha),
+        margin: const EdgeInsets.all(4),
+        color: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: glass.borderRadius),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        indicatorColor: primary.withValues(alpha: isDark ? 0.26 : 0.16),
+        indicatorShape: const StadiumBorder(),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? primary
+                : ink.withValues(alpha: 0.6),
           ),
         ),
-        color: colorScheme.surfaceContainerLow,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontSize: 12,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
+            color: states.contains(WidgetState.selected)
+                ? ink
+                : ink.withValues(alpha: 0.6),
+          ),
+        ),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: primary,
+        foregroundColor: colorScheme.onPrimary,
+        elevation: 0,
+        focusElevation: 0,
+        hoverElevation: 0,
+        highlightElevation: 0,
+        shape: const StadiumBorder(),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size(0, 52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+          backgroundColor: primary,
+          foregroundColor: colorScheme.onPrimary,
+          shape: const StadiumBorder(),
+          textStyle: const TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(0, 52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+          foregroundColor: ink,
+          backgroundColor: glass.fillColor,
+          side: BorderSide(color: glass.borderColor),
+          shape: const StadiumBorder(),
+          textStyle: const TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
           ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primary,
+          textStyle: const TextStyle(
+            fontFamily: AppTheme.fontFamily,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: glass.fillColor,
+        border: OutlineInputBorder(
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: glass.borderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: glass.borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: fieldRadius,
+          borderSide: BorderSide(color: primary, width: 1.6),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        color: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? primary.withValues(alpha: isDark ? 0.32 : 0.2)
+              : glass.fillColor,
+        ),
+        backgroundColor: glass.fillColor,
+        selectedColor: primary.withValues(alpha: isDark ? 0.32 : 0.2),
+        side: BorderSide(color: glass.borderColor),
+        shape: const StadiumBorder(),
+        labelStyle: TextStyle(
+          fontFamily: AppTheme.fontFamily,
+          color: ink,
+          fontWeight: FontWeight.w500,
+        ),
+        checkmarkColor: ink,
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          backgroundColor: glass.fillColor,
+          selectedBackgroundColor: primary.withValues(
+            alpha: isDark ? 0.32 : 0.2,
+          ),
+          selectedForegroundColor: ink,
+          foregroundColor: ink,
+          side: BorderSide(color: glass.borderColor),
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? colorScheme.onPrimary
+              : ink.withValues(alpha: 0.6),
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? primary
+              : ink.withValues(alpha: 0.08),
+        ),
+        trackOutlineColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? Colors.transparent
+              : ink.withValues(alpha: 0.24),
+        ),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: colorScheme.surfaceContainerHigh,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: colorScheme.surfaceContainerHigh,
+        surfaceTintColor: Colors.transparent,
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: colorScheme.surfaceContainerHigh,
+        surfaceTintColor: Colors.transparent,
+        headerBackgroundColor: Colors.transparent,
+        headerForegroundColor: ink,
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: colorScheme.surfaceContainerHigh,
+      ),
+      listTileTheme: ListTileThemeData(iconColor: primary),
+      dividerTheme: DividerThemeData(color: glass.borderColor, space: 1),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: isDark ? AppPalette.mist : AppPalette.ink,
+        contentTextStyle: TextStyle(
+          fontFamily: AppTheme.fontFamily,
+          color: base,
+        ),
+        actionTextColor: isDark ? AppPalette.ink : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
     );
   }

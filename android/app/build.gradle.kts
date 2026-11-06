@@ -20,6 +20,8 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Needed by the notifications plugin for scheduled reminders.
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -56,8 +58,12 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
@@ -67,5 +73,6 @@ flutter {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     testImplementation("junit:junit:4.13.2")
 }
