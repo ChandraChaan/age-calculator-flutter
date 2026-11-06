@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:agecalculator/engine/civil_date.dart';
 import 'package:agecalculator/engine/local_time.dart';
 import 'package:agecalculator/engine/recurrence.dart';
+import 'package:agecalculator/engine/upcoming_planner.dart';
 import 'package:agecalculator/models/event.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -25,10 +26,34 @@ class ImportCandidate {
   /// [EventController.addAll] replaces.
   final Event draft;
 
-  /// An event from the same source record is already saved.
+  /// An event from the same source record, or the same title, date and
+  /// time, is already saved.
   final bool alreadyImported;
 
   String get key => draft.source!.key;
+
+  /// "Contacts", or the calendar the event comes from.
+  String get group => importGroupOf(draft) ?? 'Calendar';
+
+  bool get repeats => draft.recurrence != Recurrence.none;
+}
+
+/// Where an imported event came from, for grouping: "Contacts", the
+/// calendar's name, or `null` for the user's own events.
+String? importGroupOf(Event event) {
+  final source = event.source;
+  if (source == null) return null;
+  if (source.kind == EventSourceKind.contact) return 'Contacts';
+  if (source.group case final group? when group.trim().isNotEmpty) {
+    return group.trim();
+  }
+  // Imports from 1.3.0 kept the calendar name only in their notes.
+  final notes = event.notes;
+  const prefix = 'From calendar: ';
+  if (notes != null && notes.startsWith(prefix)) {
+    return notes.substring(prefix.length).split('\n').first.trim();
+  }
+  return 'Calendar';
 }
 
 /// Reads contacts and calendars on Android. Read-only, on-device only.
@@ -70,7 +95,7 @@ class DeviceImporter {
     switch (kind) {
       case ImportKind.contacts:
         final rows = await channel.invokeListMethod<Object?>('contactEvents');
-        return contactCandidates(rows ?? const [], existing);
+        return contactCandidates(rows ?? const [], existing, now: now);
       case ImportKind.calendar:
         final rows = await channel.invokeListMethod<Object?>('calendarEvents', {
           'days': calendarDays,
@@ -131,10 +156,14 @@ CivilDate? _date(int year, int month, int day) {
 /// contact and type, sorted by name.
 List<ImportCandidate> contactCandidates(
   List<Object?> rows,
-  List<Event> existing,
-) {
+  List<Event> existing, {
+  DateTime? now,
+}) {
+  final at = now ?? DateTime.now();
   final saved = _savedKeys(existing);
+  final savedOccurrences = _savedOccurrenceKeys(existing, at);
   final seen = <String>{};
+  final seenOccurrences = <String>{};
   final candidates = <ImportCandidate>[];
   for (final row in rows) {
     if (row is! Map) continue;
@@ -153,25 +182,28 @@ List<ImportCandidate> contactCandidates(
     );
     if (!seen.add(source.key)) continue;
     final birthday = type == 'birthday';
+    final draft = Event(
+      id: 'import',
+      title: birthday
+          ? "${name.trim()}'s birthday"
+          : "${name.trim()}'s anniversary",
+      category: birthday ? EventCategory.birthday : EventCategory.anniversary,
+      date: parsed.date,
+      recurrence: Recurrence.yearly,
+      enabled: true,
+      createdAt: _placeholderTime,
+      updatedAt: _placeholderTime,
+      reminders: ReminderLeads.defaultsFor(allDay: true),
+      source: source,
+    );
+    final occurrence = occurrenceKey(draft, eventCountdown(draft, at).date);
+    // The same person saved twice, or in two accounts.
+    if (!seenOccurrences.add(occurrence)) continue;
     candidates.add(
       ImportCandidate(
-        draft: Event(
-          id: 'import',
-          title: birthday
-              ? "${name.trim()}'s birthday"
-              : "${name.trim()}'s anniversary",
-          category: birthday
-              ? EventCategory.birthday
-              : EventCategory.anniversary,
-          date: parsed.date,
-          recurrence: Recurrence.yearly,
-          enabled: true,
-          createdAt: _placeholderTime,
-          updatedAt: _placeholderTime,
-          reminders: ReminderLeads.defaultsFor(allDay: true),
-          source: source,
-        ),
-        alreadyImported: saved.contains(source.key),
+        draft: draft,
+        alreadyImported:
+            saved.contains(source.key) || savedOccurrences.contains(occurrence),
       ),
     );
   }
@@ -194,7 +226,9 @@ List<ImportCandidate> calendarCandidates(
   DateTime now,
 ) {
   final saved = _savedKeys(existing);
+  final savedOccurrences = _savedOccurrenceKeys(existing, now);
   final seen = <String>{};
+  final seenOccurrences = <String>{};
   final candidates = <ImportCandidate>[];
   for (final row in rows) {
     if (row is! Map) continue;
@@ -205,9 +239,14 @@ List<ImportCandidate> calendarCandidates(
       continue;
     }
     if (begin is! int) continue;
+    final calendar = row['calendar'];
+    final calendarName = calendar is String && calendar.trim().isNotEmpty
+        ? calendar.trim()
+        : null;
     final source = EventSource(
       kind: EventSourceKind.calendar,
       externalId: eventId,
+      group: calendarName,
     );
     final allDay = row['allDay'] == true;
     final CivilDate date;
@@ -226,25 +265,28 @@ List<ImportCandidate> calendarCandidates(
       time = LocalTime(start.hour, start.minute);
     }
     if (!seen.add(source.key)) continue;
-    final calendar = row['calendar'];
+    final draft = Event(
+      id: 'import',
+      title: title.trim(),
+      category: EventCategory.event,
+      date: date,
+      time: time,
+      recurrence: recurrenceFromRrule(row['rrule'] as String?),
+      notes: calendarName == null ? null : 'From calendar: $calendarName',
+      enabled: true,
+      createdAt: _placeholderTime,
+      updatedAt: _placeholderTime,
+      source: source,
+    );
+    // The same event in several calendars (such as a holiday in two
+    // holiday calendars) is offered once.
+    final occurrence = occurrenceKey(draft, date);
+    if (!seenOccurrences.add(occurrence)) continue;
     candidates.add(
       ImportCandidate(
-        draft: Event(
-          id: 'import',
-          title: title.trim(),
-          category: EventCategory.event,
-          date: date,
-          time: time,
-          recurrence: recurrenceFromRrule(row['rrule'] as String?),
-          notes: calendar is String && calendar.trim().isNotEmpty
-              ? 'From calendar: ${calendar.trim()}'
-              : null,
-          enabled: true,
-          createdAt: _placeholderTime,
-          updatedAt: _placeholderTime,
-          source: source,
-        ),
-        alreadyImported: saved.contains(source.key),
+        draft: draft,
+        alreadyImported:
+            saved.contains(source.key) || savedOccurrences.contains(occurrence),
       ),
     );
   }
@@ -284,6 +326,11 @@ Recurrence recurrenceFromRrule(String? rrule) {
   }
   return Recurrence.none;
 }
+
+Set<String> _savedOccurrenceKeys(List<Event> events, DateTime now) => {
+  for (final event in events)
+    occurrenceKey(event, eventCountdown(event, now).date),
+};
 
 Set<String> _savedKeys(List<Event> events) => {
   for (final event in events)

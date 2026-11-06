@@ -41,7 +41,7 @@ class HomeWidgetSnapshot {
     final today = CivilDate.fromDateTime(now.toLocal());
     final horizonEnd = today.addDays(horizonDays);
     var validThrough = horizonEnd;
-    final occurrences = <PlannedOccurrence>[];
+    var occurrences = <PlannedOccurrence>[];
 
     void completeOnlyThrough(CivilDate date) {
       if (date.isBefore(validThrough)) validThrough = date;
@@ -58,7 +58,8 @@ class HomeWidgetSnapshot {
           recurrence: Recurrence.none,
           now: now,
         );
-        if (countdown.state != CountdownState.passed) {
+        if (countdown.state != CountdownState.passed &&
+            !event.isSkipped(date)) {
           occurrences.add(
             PlannedOccurrence(
               event: event,
@@ -88,6 +89,8 @@ class HomeWidgetSnapshot {
     }
 
     occurrences.sort(compareUpcoming);
+    // As in Upcoming: a holiday imported from several calendars shows once.
+    occurrences = withoutImportedDuplicates(occurrences);
     if (occurrences.length > maxOccurrences) {
       completeOnlyThrough(occurrences[maxOccurrences - 1].date.addDays(-1));
       occurrences.removeRange(maxOccurrences, occurrences.length);

@@ -1,3 +1,4 @@
+import 'package:agecalculator/engine/recurrence.dart';
 import 'package:agecalculator/engine/reminder_planner.dart';
 import 'package:agecalculator/engine/upcoming_planner.dart';
 import 'package:agecalculator/models/event.dart';
@@ -12,6 +13,9 @@ import 'package:intl/intl.dart';
 import 'package:agecalculator/widgets/glass.dart';
 
 const double _maxContentWidth = 720;
+
+enum _DeleteChoice { thisDate, all }
+
 const String _saveFailedMessage = "Couldn't save. Please try again.";
 
 /// One event: its countdown and details, the Active switch, and Edit,
@@ -99,31 +103,74 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   Future<void> _delete() async {
-    final confirmed = await showDialog<bool>(
+    final occurrence = _occurrenceOf(_event);
+    final repeats = _event.recurrence != Recurrence.none;
+    final date = occurrence?.date;
+    final choice = await showDialog<_DeleteChoice>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete event?'),
-        content: Text(_event.title),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+      builder: (context) {
+        final danger = Theme.of(context).colorScheme.error;
+        return AlertDialog(
+          title: Text(repeats ? 'Delete repeating event?' : 'Delete event?'),
+          content: Text(
+            repeats
+                ? '${_event.title} repeats '
+                      '${recurrenceLabel(_event.recurrence).toLowerCase()}.'
+                : _event.title,
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
             ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+            if (repeats && date != null)
+              TextButton(
+                onPressed: () =>
+                    Navigator.of(context).pop(_DeleteChoice.thisDate),
+                style: TextButton.styleFrom(foregroundColor: danger),
+                child: Text(
+                  'Only ${DateFormat('d MMM').format(date.toDateTime())}',
+                ),
+              ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(_DeleteChoice.all),
+              style: TextButton.styleFrom(foregroundColor: danger),
+              child: Text(repeats ? 'Whole series' : 'Delete'),
+            ),
+          ],
+        );
+      },
     );
-    if (confirmed != true || !mounted) return;
+    if (choice == null || !mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
     final events = widget.events;
+    if (choice == _DeleteChoice.thisDate) {
+      final skipped = date!;
+      if (!await events.skipOccurrence(widget.eventId, skipped)) {
+        _showSaveFailed(messenger);
+        return;
+      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Removed ${DateFormat('d MMM yyyy').format(skipped.toDateTime())}',
+          ),
+          persist: false,
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () async {
+              if (!await events.unskipOccurrence(widget.eventId, skipped)) {
+                _showSaveFailed(messenger);
+              }
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
+    final navigator = Navigator.of(context);
     final removed = await events.delete(widget.eventId);
     if (removed == null) {
       _showSaveFailed(messenger);
@@ -132,7 +179,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     navigator.pop();
     messenger.showSnackBar(
       SnackBar(
-        content: const Text('Event deleted'),
+        content: Text(repeats ? 'Series deleted' : 'Event deleted'),
         persist: false,
         action: SnackBarAction(
           label: 'Undo',
@@ -234,7 +281,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   _DetailRow(
                     icon: Icons.repeat_rounded,
                     label: 'Repeat',
-                    value: recurrenceLabel(event.recurrence),
+                    value: event.skippedDates.isEmpty
+                        ? recurrenceLabel(event.recurrence)
+                        : '${recurrenceLabel(event.recurrence)} · '
+                              '${event.skippedDates.length} '
+                              '${event.skippedDates.length == 1 ? 'date' : 'dates'} '
+                              'removed',
                   ),
                   _DetailRow(
                     icon: Icons.notifications_rounded,

@@ -78,8 +78,16 @@ class UpcomingScreen extends StatelessWidget {
 
     final plan = events.upcomingPlan(now: clock());
     final next = plan.next;
+    final duplicates = events.duplicateIds(now: clock()).length;
     final children = <Widget>[
       if (notice != null) ...[notice, const SizedBox(height: 16)],
+      if (duplicates > 0) ...[
+        _DuplicatesNotice(
+          count: duplicates,
+          onRemove: () => _removeDuplicates(context),
+        ),
+        const SizedBox(height: 16),
+      ],
       if (next != null)
         _NextCard(occurrence: next, onTap: () => onOpenEvent(next.event)),
       ..._section('Today', plan.today),
@@ -102,6 +110,32 @@ class UpcomingScreen extends StatelessWidget {
           // The bottom inset keeps the last tile clear of the FAB.
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
           children: children,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _removeDuplicates(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final removed = await events.removeDuplicates();
+    messenger.clearSnackBars();
+    if (removed == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text("Couldn't save. Please try again.")),
+      );
+      return;
+    }
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          removed.length == 1
+              ? 'Removed 1 duplicate'
+              : 'Removed ${removed.length} duplicates',
+        ),
+        persist: false,
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => events.restoreMany(removed),
         ),
       ),
     );
@@ -213,6 +247,39 @@ class _SectionHeader extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w600,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DuplicatesNotice extends StatelessWidget {
+  const _DuplicatesNotice({required this.count, required this.onRemove});
+
+  final int count;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GlassCard(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+        child: Row(
+          children: [
+            Icon(Icons.copy_all_rounded, color: theme.colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                count == 1
+                    ? '1 duplicate event is hidden'
+                    : '$count duplicate events are hidden',
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+            TextButton(onPressed: onRemove, child: const Text('Remove')),
+          ],
         ),
       ),
     );

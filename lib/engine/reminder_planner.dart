@@ -72,6 +72,8 @@ List<PlannedReminder> planReminders(
   final today = CivilDate.fromDateTime(now.toLocal());
   final planned = <PlannedReminder>[];
   final usedIds = <int>{};
+  // One reminder per title, date and lead, however many copies exist.
+  final seen = <String>{};
 
   for (final event in events) {
     if (!event.enabled || event.reminders.isEmpty) continue;
@@ -80,9 +82,18 @@ List<PlannedReminder> planReminders(
       final date = firstOccurrenceOnOrAfter(event.date, event.recurrence, from);
       if (date == null) break;
       from = date.addDays(1);
+      if (event.isSkipped(date)) {
+        n--;
+        continue;
+      }
       for (final lead in event.reminders) {
         final fireAt = reminderInstant(event, date, lead);
         if (!fireAt.isAfter(nowUtc)) continue;
+        if (!seen.add(
+          '${normalizedTitle(event.title)}|$date|${event.time}|$lead',
+        )) {
+          continue;
+        }
         var id = reminderId(event.id, date, lead);
         while (!usedIds.add(id)) {
           id = (id + 1) & 0x7fffffff;

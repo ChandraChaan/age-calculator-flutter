@@ -84,7 +84,10 @@ class EventCodec {
           'kind': source.kind.name,
           'id': source.externalId,
           if (!source.yearKnown) 'yearKnown': false,
+          'group': ?source.group,
         },
+      if (event.skippedDates.isNotEmpty)
+        'skipped': [for (final d in event.skippedDates) d.toString()],
     };
   }
 
@@ -207,7 +210,13 @@ class EventCodec {
       updatedAt: updated ?? created ?? _epoch,
       reminders: _parseReminders(json['reminders']),
       source: _parseSource(json['source']),
+      skippedDates: _parseDates(json['skipped']),
     );
+  }
+
+  static List<CivilDate> _parseDates(Object? value) {
+    if (value is! List<Object?>) return const [];
+    return [for (final d in value) ?_parseDate(d)];
   }
 
   /// Unreadable reminder lists are dropped rather than rejecting the event.
@@ -233,6 +242,7 @@ class EventCodec {
       kind: kind,
       externalId: id,
       yearKnown: value['yearKnown'] != false,
+      group: value['group'] is String ? value['group'] as String : null,
     );
   }
 

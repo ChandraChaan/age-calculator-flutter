@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="widget_name">Upcoming</string>
-    <string name="widget_description">Next upcoming events</string>
+    <string name="widget_description">Your next events and the time left until each</string>
+    <string name="widget_next">Next</string>
+    <string name="widget_add">Add event</string>
     <string name="widget_header">Upcoming</string>
 </resources>

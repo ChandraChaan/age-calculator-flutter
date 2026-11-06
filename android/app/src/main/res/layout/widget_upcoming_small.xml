@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The next event: title, when, and a large countdown. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:orientation="vertical"
-    android:padding="@dimen/widget_padding">
+    android:padding="@dimen/widget_padding_small">
 
     <TextView
         android:id="@+id/widget_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:ellipsize="end"
+        android:fontFamily="sans-serif-medium"
+        android:letterSpacing="0.12"
         android:maxLines="1"
-        android:text="@string/widget_header"
+        android:text="@string/widget_next"
+        android:textAllCaps="true"
         android:textColor="@color/widget_on_surface_variant"
         android:textSize="@dimen/widget_header_text" />
 
@@ -21,30 +25,35 @@
         android:id="@+id/widget_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="6dp"
         android:ellipsize="end"
+        android:fontFamily="sans-serif-black"
         android:maxLines="2"
         android:textColor="@color/widget_on_surface"
-        android:textSize="@dimen/widget_title_text"
-        android:textStyle="bold" />
+        android:textSize="@dimen/widget_title_text" />
 
     <TextView
-        android:id="@+id/widget_turns"
+        android:id="@+id/widget_when"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
         android:ellipsize="end"
         android:maxLines="1"
         android:textColor="@color/widget_on_surface_variant"
         android:textSize="@dimen/widget_subtitle_text" />
 
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
     <TextView
         android:id="@+id/widget_countdown"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
         android:ellipsize="end"
+        android:fontFamily="sans-serif-black"
         android:maxLines="2"
         android:textColor="@color/widget_primary"
-        android:textSize="@dimen/widget_countdown_text"
-        android:textStyle="bold" />
+        android:textSize="@dimen/widget_countdown_text" />
 </LinearLayout>

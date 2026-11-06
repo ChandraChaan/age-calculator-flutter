@@ -1,4 +1,6 @@
 import 'package:agecalculator/screens/import_screen.dart';
+import 'package:agecalculator/screens/manage_imports_screen.dart';
+import 'package:agecalculator/services/ads_controller.dart';
 import 'package:agecalculator/services/device_import.dart';
 import 'package:agecalculator/services/reminder_service.dart';
 import 'package:agecalculator/state/event_controller.dart';
@@ -19,6 +21,7 @@ class SettingsScreen extends StatelessWidget {
     required this.onThemeChanged,
     this.reminders,
     this.importer,
+    this.ads,
     this.clock = DateTime.now,
   });
 
@@ -33,6 +36,9 @@ class SettingsScreen extends StatelessWidget {
   final DeviceImporter? importer;
 
   final DateTime Function() clock;
+
+  /// Offers "Ad privacy options" when consent rules require it.
+  final AdsController? ads;
 
   Future<void> _allowNotifications(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -54,6 +60,28 @@ class SettingsScreen extends StatelessWidget {
                 ),
         ),
       );
+  }
+
+  Future<void> _removeDuplicates(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final removed = await events.removeDuplicates();
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      removed == null
+          ? const SnackBar(content: Text("Couldn't save. Please try again."))
+          : SnackBar(
+              content: Text(
+                removed.length == 1
+                    ? 'Removed 1 duplicate'
+                    : 'Removed ${removed.length} duplicates',
+              ),
+              persist: false,
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () => events.restoreMany(removed),
+              ),
+            ),
+    );
   }
 
   void _import(BuildContext context, ImportKind kind) {
@@ -257,6 +285,60 @@ class SettingsScreen extends StatelessWidget {
                 const SizedBox(height: 32),
                 const _SectionTitle('Your data'),
                 const SizedBox(height: 12),
+                ListenableBuilder(
+                  listenable: events,
+                  builder: (context, _) {
+                    final imported = events.events
+                        .where((e) => e.source != null)
+                        .length;
+                    final duplicates = events.duplicateIds(now: clock()).length;
+                    if (imported == 0 && duplicates == 0) {
+                      return const SizedBox.shrink();
+                    }
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: GlassCard(
+                        margin: EdgeInsets.zero,
+                        child: Column(
+                          children: [
+                            if (imported > 0)
+                              ListTile(
+                                leading: const Icon(Icons.download_rounded),
+                                title: const Text('Imported events'),
+                                subtitle: Text(
+                                  '$imported from contacts and calendars',
+                                ),
+                                trailing: const Icon(
+                                  Icons.chevron_right_rounded,
+                                ),
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => ManageImportsScreen(
+                                      events: events,
+                                      clock: clock,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (imported > 0 && duplicates > 0)
+                              const Divider(indent: 16, endIndent: 16),
+                            if (duplicates > 0)
+                              ListTile(
+                                leading: const Icon(Icons.copy_all_rounded),
+                                title: const Text('Remove duplicates'),
+                                subtitle: Text(
+                                  duplicates == 1
+                                      ? '1 event repeats another'
+                                      : '$duplicates events repeat others',
+                                ),
+                                onTap: () => _removeDuplicates(context),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
                 OutlinedButton.icon(
                   onPressed: () => _deleteAllEvents(context),
                   style: OutlinedButton.styleFrom(
@@ -265,6 +347,26 @@ class SettingsScreen extends StatelessWidget {
                   icon: const Icon(Icons.delete_forever_rounded),
                   label: const Text('Delete all events'),
                 ),
+                if (ads case final ads?)
+                  ListenableBuilder(
+                    listenable: ads,
+                    builder: (context, _) => ads.privacyOptionsRequired
+                        ? Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: GlassCard(
+                              margin: EdgeInsets.zero,
+                              child: ListTile(
+                                leading: const Icon(Icons.privacy_tip_rounded),
+                                title: const Text('Ad privacy options'),
+                                subtitle: const Text(
+                                  'Change how ads may use your data',
+                                ),
+                                onTap: ads.showPrivacyOptions,
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
                 const SizedBox(height: 24),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,

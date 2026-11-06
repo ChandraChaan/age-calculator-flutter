@@ -59,6 +59,10 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>
+        <!-- AdMob app ID (Google's test ID unless ADMOB_APP_ID is supplied). -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />

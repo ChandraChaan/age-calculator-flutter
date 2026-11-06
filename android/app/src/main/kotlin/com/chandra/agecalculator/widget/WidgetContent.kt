@@ -16,6 +16,8 @@ data class WidgetItem(
     val turns: String?,
     val countdown: String,
     val rowCountdown: String,
+    val date: CivilDate? = null,
+    val time: ClockTime? = null,
 ) {
     val talkBack: String
         get() = if (turns.isNullOrEmpty()) {
@@ -68,6 +70,7 @@ data class WidgetView(
 object WidgetContent {
     const val SMALL = 1
     const val MEDIUM = 3
+    const val LARGE = 5
 
     fun build(
         snapshot: WidgetSnapshot?,
@@ -89,6 +92,8 @@ object WidgetContent {
                 turns = occurrence.turns,
                 countdown = full,
                 rowCountdown = row,
+                date = occurrence.date,
+                time = occurrence.time,
             )
         }
         if (remaining.isEmpty()) {

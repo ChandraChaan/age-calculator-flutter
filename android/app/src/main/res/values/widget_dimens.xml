@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="widget_corner">16dp</dimen>
+    <dimen name="widget_corner">24dp</dimen>
     <dimen name="widget_padding">12dp</dimen>
-    <dimen name="widget_header_text">12sp</dimen>
-    <dimen name="widget_title_text">16sp</dimen>
+    <dimen name="widget_padding_small">16dp</dimen>
+    <dimen name="widget_header_text">11sp</dimen>
+    <dimen name="widget_list_header_text">17sp</dimen>
+    <dimen name="widget_title_text">18sp</dimen>
     <dimen name="widget_subtitle_text">13sp</dimen>
-    <dimen name="widget_countdown_text">15sp</dimen>
-    <dimen name="widget_row_title_text">14sp</dimen>
-    <dimen name="widget_row_countdown_text">13sp</dimen>
+    <dimen name="widget_countdown_text">24sp</dimen>
+    <dimen name="widget_row_title_text">15sp</dimen>
+    <dimen name="widget_row_when_text">12sp</dimen>
+    <dimen name="widget_row_countdown_text">15sp</dimen>
+    <dimen name="widget_row_corner">16dp</dimen>
 </resources>
