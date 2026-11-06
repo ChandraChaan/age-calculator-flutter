@@ -2,6 +2,7 @@
 <resources>
     <dimen name="widget_corner">24dp</dimen>
     <dimen name="widget_padding">12dp</dimen>
+    <dimen name="widget_padding_list">10dp</dimen>
     <dimen name="widget_padding_small">16dp</dimen>
     <dimen name="widget_header_text">11sp</dimen>
     <dimen name="widget_list_header_text">17sp</dimen>

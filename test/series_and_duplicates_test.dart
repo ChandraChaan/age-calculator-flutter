@@ -249,4 +249,25 @@ void main() {
     expect(AdUnits.banner, isNull);
     ads.dispose();
   });
+
+  test('the widget shows no age for a birthday without a year', () {
+    final noYear = Event(
+      id: 'r',
+      title: "Ravi's birthday",
+      category: EventCategory.birthday,
+      date: CivilDate(2000, 11, 9),
+      recurrence: Recurrence.yearly,
+      enabled: true,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+      source: const EventSource(
+        kind: EventSourceKind.contact,
+        externalId: '2',
+        yearKnown: false,
+      ),
+    );
+    final json = HomeWidgetSnapshot.build([noYear], fixedNow()).toJson();
+    final first = (json['occurrences']! as List).first as Map;
+    expect(first.containsKey('turns'), isFalse);
+  });
 }

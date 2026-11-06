@@ -101,10 +101,12 @@ class _GroupCard extends StatelessWidget {
   Future<void> _remove(BuildContext context, _Scope scope) async {
     final targets = _inScope(scope);
     if (targets.isEmpty) return;
+    final n = targets.length;
+    final noun = n == 1 ? 'event' : 'events';
     final what = switch (scope) {
-      _Scope.all => 'all ${targets.length} events',
-      _Scope.repeating => '${targets.length} repeating events',
-      _Scope.oneTime => '${targets.length} one-time events',
+      _Scope.all => n == 1 ? 'the only event' : 'all $n events',
+      _Scope.repeating => '$n repeating $noun',
+      _Scope.oneTime => '$n one-time $noun',
     };
     final confirmed = await showDialog<bool>(
       context: context,

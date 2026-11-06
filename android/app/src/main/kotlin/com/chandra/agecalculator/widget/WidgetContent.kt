@@ -101,7 +101,9 @@ object WidgetContent {
                 if (snapshot.eventCount == 0) WidgetKind.ADD_EVENT else WidgetKind.OPEN_UPCOMING,
             )
         }
-        return WidgetView(WidgetKind.ITEMS, remaining.take(maxItems))
+        // Each event once, at its next occurrence, as in Upcoming. Later
+        // occurrences stay in the snapshot for when this one passes.
+        return WidgetView(WidgetKind.ITEMS, remaining.distinctBy { it.eventId }.take(maxItems))
     }
 
     fun remainingOccurrences(

@@ -141,4 +141,24 @@ class WidgetLogicTest {
         )
         return candidates.first { it.exists() }
     }
+
+    @Test
+    fun widgetRowsFitTheHeight() {
+        assertEquals(1, WidgetRenderer.rowsFor(110))
+        assertEquals(2, WidgetRenderer.rowsFor(152))
+        assertEquals(3, WidgetRenderer.rowsFor(200))
+        assertEquals(5, WidgetRenderer.rowsFor(600))
+        assertEquals(1, WidgetRenderer.rowsFor(0))
+    }
+
+    @Test
+    fun repeatingEventsShowOnceAtTheirNextOccurrence() {
+        val snapshot = WidgetSnapshot.parse(
+            """{"schemaVersion":1,"eventCount":2,"validThrough":"2026-07-15","occurrences":[{"eventId":"gym","title":"Gym","date":"2026-06-16","time":"07:00"},{"eventId":"gym","title":"Gym","date":"2026-06-23","time":"07:00"},{"eventId":"b","title":"B","date":"2026-06-25"}]}""",
+        )
+        val now = java.util.GregorianCalendar(utc).apply { clear(); set(2026, 5, 15, 12, 0) }.timeInMillis
+        val view = WidgetContent.build(snapshot, now, utc, WidgetContent.LARGE)
+        assertEquals(listOf("Gym", "B"), view.items.map { it.title })
+        assertEquals(CivilDate(2026, 6, 16), view.items[0].date)
+    }
 }

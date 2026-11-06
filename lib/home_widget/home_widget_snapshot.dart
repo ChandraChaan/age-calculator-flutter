@@ -64,7 +64,9 @@ class HomeWidgetSnapshot {
             PlannedOccurrence(
               event: event,
               countdown: countdown,
-              yearsSinceAnchor: event.recurrence == Recurrence.yearly
+              // No age for a birthday saved without its year.
+              yearsSinceAnchor:
+                  event.recurrence == Recurrence.yearly && event.yearKnown
                   ? date.year - event.date.year
                   : null,
             ),

@@ -36,8 +36,11 @@ object WidgetRenderer {
             val views = RemoteViews(
                 mapOf(
                     SizeF(110f, 110f) to small(context, id, snapshot, now, tz),
-                    SizeF(250f, 110f) to list(context, id, snapshot, now, tz, large = false),
-                    SizeF(250f, 300f) to list(context, id, snapshot, now, tz, large = true),
+                    SizeF(250f, 96f) to list(context, id, snapshot, now, tz, rows = 1),
+                    SizeF(250f, 144f) to list(context, id, snapshot, now, tz, rows = 2),
+                    SizeF(250f, 192f) to list(context, id, snapshot, now, tz, rows = 3),
+                    SizeF(250f, 240f) to list(context, id, snapshot, now, tz, rows = 4),
+                    SizeF(250f, 288f) to list(context, id, snapshot, now, tz, rows = 5),
                 ),
             )
             manager.updateAppWidget(id, views)
@@ -57,10 +60,10 @@ object WidgetRenderer {
     ): RemoteViews {
         val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
         val maxHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0)
-        return when {
-            minWidth >= 250 && maxHeight >= 300 -> list(context, id, snapshot, now, tz, large = true)
-            minWidth >= 250 -> list(context, id, snapshot, now, tz, large = false)
-            else -> small(context, id, snapshot, now, tz)
+        return if (minWidth >= 250) {
+            list(context, id, snapshot, now, tz, rowsFor(maxHeight))
+        } else {
+            small(context, id, snapshot, now, tz)
         }
     }
 
@@ -112,12 +115,13 @@ object WidgetRenderer {
         snapshot: WidgetSnapshot?,
         now: Long,
         tz: TimeZone,
-        large: Boolean,
+        rows: Int,
     ): RemoteViews {
-        val rows = if (large) WidgetContent.LARGE else WidgetContent.MEDIUM
         val view = WidgetContent.build(snapshot, now, tz, rows)
         if (view.kind != WidgetKind.ITEMS) return message(context, widgetId, view)
+        val large = rows > WidgetContent.MEDIUM
         val layout = if (large) R.layout.widget_upcoming_large else R.layout.widget_upcoming_medium
+        val rowCount = if (large) WidgetContent.LARGE else WidgetContent.MEDIUM
         val views = RemoteViews(context.packageName, layout)
         views.setTextViewText(R.id.widget_header, view.header)
         views.setOnClickPendingIntent(
@@ -130,8 +134,8 @@ object WidgetRenderer {
             WidgetLaunch.pendingIntent(context, widgetId, 9, WidgetLaunch.ACTION_ADD_EVENT),
         )
         // Only the rows this layout has; touching a missing view breaks the widget.
-        for (i in 0 until rows) {
-            val item = view.items.getOrNull(i)
+        for (i in 0 until rowCount) {
+            val item = if (i < rows) view.items.getOrNull(i) else null
             if (item == null) {
                 views.setViewVisibility(rowIds[i], View.GONE)
                 continue
@@ -154,6 +158,9 @@ object WidgetRenderer {
         }
         return views
     }
+
+    /** Rows that fit [heightDp]: 48dp of header and padding, then 48dp per row. */
+    fun rowsFor(heightDp: Int): Int = ((heightDp - 48) / 48).coerceIn(1, WidgetContent.LARGE)
 
     /** "Turns 27 · Sun, 8 Nov · 6:30 PM", leaving out what doesn't apply. */
     private fun whenLabel(context: Context, item: WidgetItem, tz: TimeZone): String {

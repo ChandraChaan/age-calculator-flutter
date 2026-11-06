@@ -6,13 +6,13 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:orientation="vertical"
-    android:padding="@dimen/widget_padding">
+    android:padding="@dimen/widget_padding_list">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
-        android:minHeight="36dp"
+        android:minHeight="28dp"
         android:orientation="horizontal">
 
         <TextView
@@ -30,11 +30,11 @@
 
         <ImageView
             android:id="@+id/widget_add"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:background="@drawable/widget_add_background"
             android:contentDescription="@string/widget_add"
-            android:padding="7dp"
+            android:padding="5dp"
             android:src="@drawable/ic_widget_add"
             android:tint="@color/widget_on_surface" />
     </LinearLayout>
@@ -43,15 +43,15 @@
         android:id="@+id/widget_row_0"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="3dp"
         android:background="@drawable/widget_row_background"
         android:gravity="center_vertical"
-        android:minHeight="52dp"
+        android:minHeight="44dp"
         android:orientation="horizontal"
         android:paddingStart="12dp"
-        android:paddingTop="8dp"
+        android:paddingTop="4dp"
         android:paddingEnd="12dp"
-        android:paddingBottom="8dp">
+        android:paddingBottom="4dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -96,15 +96,15 @@
         android:id="@+id/widget_row_1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="3dp"
         android:background="@drawable/widget_row_background"
         android:gravity="center_vertical"
-        android:minHeight="52dp"
+        android:minHeight="44dp"
         android:orientation="horizontal"
         android:paddingStart="12dp"
-        android:paddingTop="8dp"
+        android:paddingTop="4dp"
         android:paddingEnd="12dp"
-        android:paddingBottom="8dp">
+        android:paddingBottom="4dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -149,15 +149,15 @@
         android:id="@+id/widget_row_2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="3dp"
         android:background="@drawable/widget_row_background"
         android:gravity="center_vertical"
-        android:minHeight="52dp"
+        android:minHeight="44dp"
         android:orientation="horizontal"
         android:paddingStart="12dp"
-        android:paddingTop="8dp"
+        android:paddingTop="4dp"
         android:paddingEnd="12dp"
-        android:paddingBottom="8dp">
+        android:paddingBottom="4dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -202,15 +202,15 @@
         android:id="@+id/widget_row_3"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="3dp"
         android:background="@drawable/widget_row_background"
         android:gravity="center_vertical"
-        android:minHeight="52dp"
+        android:minHeight="44dp"
         android:orientation="horizontal"
         android:paddingStart="12dp"
-        android:paddingTop="8dp"
+        android:paddingTop="4dp"
         android:paddingEnd="12dp"
-        android:paddingBottom="8dp">
+        android:paddingBottom="4dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -255,15 +255,15 @@
         android:id="@+id/widget_row_4"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="3dp"
         android:background="@drawable/widget_row_background"
         android:gravity="center_vertical"
-        android:minHeight="52dp"
+        android:minHeight="44dp"
         android:orientation="horizontal"
         android:paddingStart="12dp"
-        android:paddingTop="8dp"
+        android:paddingTop="4dp"
         android:paddingEnd="12dp"
-        android:paddingBottom="8dp">
+        android:paddingBottom="4dp">
 
         <LinearLayout
             android:layout_width="0dp"
