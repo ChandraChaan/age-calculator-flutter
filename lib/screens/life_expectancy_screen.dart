@@ -3,6 +3,7 @@ import 'package:agecalculator/engine/life_expectancy.dart';
 import 'package:agecalculator/utils/date_utils.dart';
 import 'package:agecalculator/widgets/date_picker_field.dart';
 import 'package:flutter/material.dart';
+import 'package:agecalculator/widgets/glass.dart';
 
 class LifeExpectancyScreen extends StatefulWidget {
   const LifeExpectancyScreen({super.key, this.initialDateOfBirth});
@@ -97,7 +98,7 @@ class _LifeExpectancyScreenState extends State<LifeExpectancyScreen> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Card(
+                    GlassCard(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: DatePickerField(
@@ -224,7 +225,7 @@ class _ChoiceCard<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return GlassCard(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
         child: Column(
@@ -274,7 +275,7 @@ class _ResultCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Card(
+    return GlassCard(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(

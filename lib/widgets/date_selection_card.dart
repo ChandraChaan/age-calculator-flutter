@@ -1,6 +1,7 @@
 import 'package:agecalculator/utils/date_utils.dart';
 import 'package:agecalculator/widgets/date_picker_field.dart';
 import 'package:flutter/material.dart';
+import 'package:agecalculator/widgets/glass.dart';
 
 class DateSelectionCard extends StatelessWidget {
   const DateSelectionCard({
@@ -20,7 +21,7 @@ class DateSelectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return GlassCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

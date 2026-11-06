@@ -1,6 +1,7 @@
 import 'package:agecalculator/engine/civil_date.dart';
 import 'package:agecalculator/engine/local_time.dart';
 import 'package:agecalculator/engine/recurrence.dart';
+import 'package:agecalculator/engine/reminder_planner.dart';
 import 'package:agecalculator/models/event.dart';
 import 'package:agecalculator/state/event_controller.dart';
 import 'package:agecalculator/widgets/date_picker_field.dart';
@@ -23,7 +24,10 @@ typedef _Fields = ({
   LocalTime? time,
   Recurrence recurrence,
   String notes,
+  String reminders,
 });
+
+String _reminderKey(List<int> reminders) => reminders.join(',');
 
 /// Creates, edits or duplicates an event. Pops with the saved [Event], or
 /// with nothing when the user leaves without saving.
@@ -87,6 +91,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
   LocalTime? _time;
   LocalTime? _lastTime;
   late Recurrence _recurrence;
+  late List<int> _reminders;
   bool _repeatChosen = false;
   bool _saving = false;
 
@@ -105,6 +110,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
         time: null,
         recurrence: Recurrence.none,
         notes: '',
+        reminders: _reminderKey(ReminderLeads.defaultsFor(allDay: true)),
       ),
       _Mode.saveBirthday => (
         title: 'Birthday',
@@ -113,6 +119,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
         time: null,
         recurrence: Recurrence.yearly,
         notes: '',
+        reminders: _reminderKey(ReminderLeads.defaultsFor(allDay: true)),
       ),
       _Mode.edit || _Mode.duplicate => (
         title: initial!.title,
@@ -121,6 +128,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
         time: initial.time,
         recurrence: initial.recurrence,
         notes: initial.notes ?? '',
+        reminders: _reminderKey(initial.reminders),
       ),
     };
     final title = _initialFields.title;
@@ -143,6 +151,8 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
     _date = _initialFields.date;
     _time = _initialFields.time;
     _recurrence = _initialFields.recurrence;
+    _reminders =
+        widget.initial?.reminders ?? ReminderLeads.defaultsFor(allDay: true);
   }
 
   @override
@@ -161,6 +171,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
     time: _time,
     recurrence: _recurrence,
     notes: _notes.text,
+    reminders: _reminderKey(_reminders),
   );
 
   bool get _hasChanges => _fields != _initialFields || !_dateValid;
@@ -199,6 +210,29 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
     setState(() {
       _lastTime = _time;
       _time = null;
+      _adaptReminders(allDay: true);
+    });
+  }
+
+  /// Keeps the reminders that still apply after switching between all-day
+  /// and timed; falls back to the default when none do.
+  void _adaptReminders({required bool allDay}) {
+    if (_reminders.isEmpty) return;
+    final options = allDay ? ReminderLeads.allDay : ReminderLeads.timed;
+    final kept = [
+      for (final m in _reminders)
+        if (options.contains(m)) m,
+    ];
+    _reminders = kept.isEmpty
+        ? ReminderLeads.defaultsFor(allDay: allDay)
+        : kept;
+  }
+
+  void _toggleReminder(int minutes, bool on) {
+    setState(() {
+      _reminders = normalizeReminders(
+        on ? [..._reminders, minutes] : _reminders.where((m) => m != minutes),
+      );
     });
   }
 
@@ -209,7 +243,11 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
       initialTime: TimeOfDay(hour: start.hour, minute: start.minute),
     );
     if (picked == null || !mounted) return;
-    setState(() => _time = LocalTime(picked.hour, picked.minute));
+    setState(() {
+      final wasAllDay = _time == null;
+      _time = LocalTime(picked.hour, picked.minute);
+      if (wasAllDay) _adaptReminders(allDay: false);
+    });
   }
 
   Future<void> _save() async {
@@ -236,6 +274,7 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
       time: _time,
       recurrence: _recurrence,
       notes: notes.isEmpty ? null : notes,
+      reminders: _reminders,
     );
     if (widget._mode == _Mode.saveBirthday &&
         event.category == EventCategory.birthday &&
@@ -428,7 +467,36 @@ class _EventEditorScreenState extends State<EventEditorScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+                  const _FieldLabel('Reminders'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final minutes
+                          in time == null
+                              ? ReminderLeads.allDay
+                              : ReminderLeads.timed)
+                        FilterChip(
+                          label: Text(
+                            reminderLeadLabel(minutes, allDay: time == null),
+                          ),
+                          selected: _reminders.contains(minutes),
+                          onSelected: (on) => _toggleReminder(minutes, on),
+                        ),
+                    ],
+                  ),
+                  if (time == null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'All-day reminders arrive at 9:00 AM.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
                   TextField(
                     controller: _notes,
                     maxLength: _maxNotesLength,

@@ -6,6 +6,7 @@ import 'package:agecalculator/widgets/event_category_style.dart';
 import 'package:agecalculator/widgets/event_tile.dart';
 import 'package:agecalculator/widgets/minute_ticker.dart';
 import 'package:flutter/material.dart';
+import 'package:agecalculator/widgets/glass.dart';
 
 const double _maxContentWidth = 720;
 
@@ -18,6 +19,7 @@ class UpcomingScreen extends StatelessWidget {
     required this.onCalculateAge,
     required this.onOpenEvent,
     required this.onAddEvent,
+    this.onImport,
   });
 
   final EventController events;
@@ -25,6 +27,9 @@ class UpcomingScreen extends StatelessWidget {
   final VoidCallback onCalculateAge;
   final ValueChanged<Event> onOpenEvent;
   final VoidCallback onAddEvent;
+
+  /// Offers "Import birthdays" on the empty screen when not null.
+  final VoidCallback? onImport;
 
   @override
   Widget build(BuildContext context) {
@@ -67,6 +72,7 @@ class UpcomingScreen extends StatelessWidget {
         notice: notice,
         onAddEvent: onAddEvent,
         onCalculateAge: onCalculateAge,
+        onImport: onImport,
       );
     }
 
@@ -124,23 +130,26 @@ class _NextCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final onCard = colorScheme.onPrimaryContainer;
+    final onCard = colorScheme.onSurface;
     final event = occurrence.event;
 
     return MergeSemantics(
-      child: Card(
-        color: colorScheme.primaryContainer,
-        clipBehavior: Clip.antiAlias,
+      child: GlassCard(
+        highlight: true,
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
                   'Next',
-                  style: theme.textTheme.labelLarge?.copyWith(color: onCard),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -173,9 +182,9 @@ class _NextCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   keepNumbersWithUnits(countdownLabel(occurrence.countdown)),
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: onCard,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.primary,
                   ),
                 ),
               ],
@@ -216,26 +225,22 @@ class _RecoveredNotice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.info_outline_rounded,
-            color: colorScheme.onSecondaryContainer,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              "Some saved events couldn't be read.",
-              style: TextStyle(color: colorScheme.onSecondaryContainer),
+    return GlassCard(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline_rounded, color: colorScheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                "Some saved events couldn't be read.",
+                style: TextStyle(color: colorScheme.onSecondaryContainer),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -246,11 +251,13 @@ class _EmptyState extends StatelessWidget {
     required this.notice,
     required this.onAddEvent,
     required this.onCalculateAge,
+    this.onImport,
   });
 
   final Widget? notice;
   final VoidCallback onAddEvent;
   final VoidCallback onCalculateAge;
+  final VoidCallback? onImport;
 
   @override
   Widget build(BuildContext context) {
@@ -303,6 +310,14 @@ class _EmptyState extends StatelessWidget {
                     icon: const Icon(Icons.cake_outlined),
                     label: const Text('Calculate an age'),
                   ),
+                  if (onImport case final onImport?) ...[
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: onImport,
+                      icon: const Icon(Icons.contacts_rounded),
+                      label: const Text('Import birthdays from contacts'),
+                    ),
+                  ],
                 ],
               ),
             ),

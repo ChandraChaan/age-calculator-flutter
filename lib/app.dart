@@ -2,13 +2,21 @@ import 'package:agecalculator/data/event_storage.dart';
 import 'package:agecalculator/home_widget/home_widget_sync.dart';
 import 'package:agecalculator/home_widget/widget_launch_action.dart';
 import 'package:agecalculator/screens/app_shell.dart';
+import 'package:agecalculator/services/device_import.dart';
+import 'package:agecalculator/services/reminder_service.dart';
 import 'package:agecalculator/state/event_controller.dart';
 import 'package:agecalculator/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AgeCalculatorApp extends StatefulWidget {
-  const AgeCalculatorApp({super.key, this.clock, this.homeWidgetSync});
+  const AgeCalculatorApp({
+    super.key,
+    this.clock,
+    this.homeWidgetSync,
+    this.reminders,
+    this.deviceImport,
+  });
 
   /// Source of the current time for events; [DateTime.now] when null.
   final DateTime Function()? clock;
@@ -16,6 +24,14 @@ class AgeCalculatorApp extends StatefulWidget {
   /// Whether to keep the Android home screen widget in step; by default
   /// only on Android.
   final bool? homeWidgetSync;
+
+  /// Whether to schedule reminder notifications; by default only on
+  /// Android.
+  final bool? reminders;
+
+  /// Whether importing from contacts and calendars is offered; by default
+  /// only on Android.
+  final bool? deviceImport;
 
   @override
   State<AgeCalculatorApp> createState() => _AgeCalculatorAppState();
@@ -27,6 +43,8 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
   ThemeMode _themeMode = ThemeMode.system;
   EventController? _events;
   HomeWidgetSync? _homeWidget;
+  ReminderSync? _reminders;
+  DeviceImporter? _importer;
   WidgetLaunchAction? _initialLaunchAction;
   bool _isLoaded = false;
 
@@ -39,6 +57,7 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
   @override
   void dispose() {
     _homeWidget?.dispose();
+    _reminders?.dispose();
     _events?.dispose();
     super.dispose();
   }
@@ -58,19 +77,31 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
       clock: clock,
       enabled: widget.homeWidgetSync,
     );
-    final launchAction = await homeWidget.consumeLaunchAction();
+    final reminders = ReminderSync(
+      events: events,
+      clock: clock,
+      prefs: prefs,
+      enabled: widget.reminders,
+    );
+    final launchAction =
+        await homeWidget.consumeLaunchAction() ??
+        await reminders.consumeLaunchAction();
 
     if (!mounted) {
       homeWidget.dispose();
+      reminders.dispose();
       events.dispose();
       return;
     }
 
     homeWidget.start();
+    reminders.start();
     setState(() {
       _themeMode = _parseThemeMode(saved);
       _events = events;
       _homeWidget = homeWidget;
+      _reminders = reminders;
+      _importer = DeviceImporter(enabled: widget.deviceImport);
       _initialLaunchAction = launchAction;
       _isLoaded = true;
     });
@@ -109,6 +140,8 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: _isLoaded ? _themeMode : ThemeMode.system,
+      // Lets every frosted surface share one backdrop read.
+      builder: (context, child) => BackdropGroup(child: child!),
       home: _isLoaded
           ? AppShell(
               events: _events!,
@@ -117,6 +150,9 @@ class _AgeCalculatorAppState extends State<AgeCalculatorApp> {
               onThemeChanged: _setThemeMode,
               initialLaunchAction: _initialLaunchAction,
               launchActions: _homeWidget?.launchActions,
+              reminderTaps: _reminders?.taps,
+              reminders: _reminders,
+              importer: _importer,
             )
           : const _LoadingScreen(),
     );

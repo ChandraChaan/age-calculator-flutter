@@ -426,6 +426,31 @@ void main() {
   });
 
   group('ST-07 failed saves are undone', () {
+    test('addAll saves every draft in one write with fresh IDs', () async {
+      final h = await _harness();
+      final draft = Event(
+        id: 'import',
+        title: 'Imported',
+        category: EventCategory.birthday,
+        date: CivilDate(1990, 1, 2),
+        recurrence: Recurrence.yearly,
+        enabled: true,
+        createdAt: DateTime.utc(1970),
+        updatedAt: DateTime.utc(1970),
+      );
+      final saved = await h.controller.addAll([
+        draft,
+        draft.copyWith(title: 'Second'),
+      ]);
+      expect(saved!.map((e) => e.id), ['id-1', 'id-2']);
+      expect(h.controller.events.map((e) => e.title), ['Imported', 'Second']);
+      expect(h.notifications, 1);
+
+      h.storage.failSaves = true;
+      expect(await h.controller.addAll([draft]), isNull);
+      expect(h.controller.events, hasLength(2));
+    });
+
     test('add: shown, then reverted, listeners told both times', () async {
       final harness = await _harness();
       harness.storage.failSaves = true;

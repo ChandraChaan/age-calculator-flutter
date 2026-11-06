@@ -29,11 +29,14 @@ Built with Material 3, it features responsive layouts, animated result cards, le
 - **Exact age calculation** — Years, months, days, weeks, hours, and minutes
 - **Total time lived** — Total days, months, weeks, hours, and minutes
 - **Birthday insights** — Next birthday countdown, birthday weekday, age in months/days
-- **Material 3 UI** — Rounded cards, smooth animations, and clean typography
+- **Upcoming events** — Birthdays, exams, trips and other dates with live countdowns and a home screen widget
+- **Reminders** — Per-event notifications (at start, 10 min to 1 week before); all-day reminders arrive at 9:00 AM
+- **Import** — Optional, read-only import of contact birthdays/anniversaries and calendar events (nothing leaves the device)
+- **Glass UI** — Frosted-glass Material 3 design in two colours: one violet accent over neutral ink or mist
 - **Dark & Light mode** — AppBar theme toggle with SharedPreferences persistence
 - **Date picker** — Native Flutter date picker with future-date validation
 - **Leap year support** — Correct handling of February 29 birthdays
-- **Offline first** — No backend, no internet required
+- **Offline first** — No backend, no internet permission, no account
 - **Accessible** — Semantic labels and readable contrast
 - **Lightweight** — Minimal dependencies, fast startup
 

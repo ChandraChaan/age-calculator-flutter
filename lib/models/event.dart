@@ -15,6 +15,87 @@ enum EventCategory {
 
 const Object _unchanged = Object();
 
+/// Where an imported event came from.
+enum EventSourceKind { contact, calendar }
+
+/// Links an event to the device record it was imported from, so importing
+/// again skips it. The app never writes back to that record.
+class EventSource {
+  const EventSource({
+    required this.kind,
+    required this.externalId,
+    this.yearKnown = true,
+  });
+
+  final EventSourceKind kind;
+
+  /// Stable within [kind], e.g. `"42:birthday"` for a contact's birthday.
+  final String externalId;
+
+  /// `false` for a contact birthday saved without a year. The event's year
+  /// is then only a placeholder and no age is shown.
+  final bool yearKnown;
+
+  /// [kind] and [externalId] joined; unique across all sources.
+  String get key => '${kind.name}:$externalId';
+
+  @override
+  bool operator ==(Object other) {
+    return other is EventSource &&
+        other.kind == kind &&
+        other.externalId == externalId &&
+        other.yearKnown == yearKnown;
+  }
+
+  @override
+  int get hashCode => Object.hash(kind, externalId, yearKnown);
+
+  @override
+  String toString() => 'EventSource($key${yearKnown ? '' : ', no year'})';
+}
+
+/// Reminder lead times, in minutes before an occurrence starts. All-day
+/// occurrences "start" at [allDayReminderTime] for reminders.
+abstract final class ReminderLeads {
+  static const atStart = 0;
+  static const tenMinutes = 10;
+  static const thirtyMinutes = 30;
+  static const oneHour = 60;
+  static const threeHours = 180;
+  static const oneDay = 1440;
+  static const oneWeek = 10080;
+
+  /// The choices offered for a timed event.
+  static const timed = [
+    atStart,
+    tenMinutes,
+    thirtyMinutes,
+    oneHour,
+    threeHours,
+    oneDay,
+    oneWeek,
+  ];
+
+  /// The choices offered for an all-day event.
+  static const allDay = [atStart, oneDay, oneWeek];
+
+  /// What a new event starts with.
+  static List<int> defaultsFor({required bool allDay}) =>
+      allDay ? const [atStart] : const [oneHour];
+}
+
+/// The hour of day at which an all-day event's reminders fire.
+const int allDayReminderHour = 9;
+
+/// Sorted, without duplicates or negative values, unmodifiable.
+List<int> normalizeReminders(Iterable<int> minutes) {
+  final unique = {
+    for (final m in minutes)
+      if (m >= 0) m,
+  }.toList()..sort();
+  return List.unmodifiable(unique);
+}
+
 /// A user-created event.
 ///
 /// An event without a [time] is all-day. [enabled] is the Active state:
@@ -31,7 +112,10 @@ class Event {
     required this.enabled,
     required this.createdAt,
     required this.updatedAt,
-  }) : assert(id.isNotEmpty, 'id must not be empty'),
+    List<int> reminders = const [],
+    this.source,
+  }) : reminders = normalizeReminders(reminders),
+       assert(id.isNotEmpty, 'id must not be empty'),
        assert(title.trim().isNotEmpty, 'title must not be blank'),
        assert(createdAt.isUtc, 'createdAt must be UTC'),
        assert(updatedAt.isUtc, 'updatedAt must be UTC');
@@ -50,9 +134,20 @@ class Event {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  /// Minutes before each occurrence at which to remind; sorted, unique.
+  /// Empty means no reminders.
+  final List<int> reminders;
+
+  /// Set when the event was imported from contacts or the calendar.
+  final EventSource? source;
+
   bool get isAllDay => time == null;
 
-  /// Pass `time: null` or `notes: null` to clear those fields.
+  /// `false` only for an imported birthday without a year.
+  bool get yearKnown => source?.yearKnown ?? true;
+
+  /// Pass `time: null`, `notes: null` or `source: null` to clear those
+  /// fields.
   Event copyWith({
     String? id,
     String? title,
@@ -64,6 +159,8 @@ class Event {
     bool? enabled,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<int>? reminders,
+    Object? source = _unchanged,
   }) {
     return Event(
       id: id ?? this.id,
@@ -76,6 +173,10 @@ class Event {
       enabled: enabled ?? this.enabled,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      reminders: reminders ?? this.reminders,
+      source: identical(source, _unchanged)
+          ? this.source
+          : source as EventSource?,
     );
   }
 
@@ -91,7 +192,9 @@ class Event {
         other.notes == notes &&
         other.enabled == enabled &&
         other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
+        other.updatedAt == updatedAt &&
+        _sameInts(other.reminders, reminders) &&
+        other.source == source;
   }
 
   @override
@@ -106,6 +209,8 @@ class Event {
     enabled,
     createdAt,
     updatedAt,
+    Object.hashAll(reminders),
+    source,
   );
 
   @override
@@ -123,4 +228,12 @@ List<Event> findBirthdaysOn(Iterable<Event> events, CivilDate date) {
     for (final event in events)
       if (event.category == EventCategory.birthday && event.date == date) event,
   ];
+}
+
+bool _sameInts(List<int> a, List<int> b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) return false;
+  }
+  return true;
 }

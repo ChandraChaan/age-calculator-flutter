@@ -15,7 +15,8 @@ import 'support/upcoming_fixtures.dart';
 
 const _privacyNote =
     'Your events are stored locally on your device. The app does not use an '
-    'account or sync your events online.';
+    'account or sync your events online. Contacts and calendars are read only '
+    'when you import, and never changed.';
 
 Finder _segment(String label) => find.descendant(
   of: find.byType(SegmentedButton<ThemeMode>),

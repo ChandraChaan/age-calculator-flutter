@@ -77,6 +77,14 @@ class EventCodec {
       'enabled': event.enabled,
       'createdAt': event.createdAt.toUtc().toIso8601String(),
       'updatedAt': event.updatedAt.toUtc().toIso8601String(),
+      // Written only when set, so documents without them stay as before.
+      if (event.reminders.isNotEmpty) 'reminders': event.reminders,
+      if (event.source case final source?)
+        'source': {
+          'kind': source.kind.name,
+          'id': source.externalId,
+          if (!source.yearKnown) 'yearKnown': false,
+        },
     };
   }
 
@@ -197,6 +205,34 @@ class EventCodec {
       enabled: rawEnabled is bool ? rawEnabled : true,
       createdAt: created ?? updated ?? _epoch,
       updatedAt: updated ?? created ?? _epoch,
+      reminders: _parseReminders(json['reminders']),
+      source: _parseSource(json['source']),
+    );
+  }
+
+  /// Unreadable reminder lists are dropped rather than rejecting the event.
+  static List<int> _parseReminders(Object? value) {
+    if (value is! List<Object?>) return const [];
+    return [
+      for (final m in value)
+        if (m is int && m >= 0 && m <= 366 * 24 * 60) m,
+    ];
+  }
+
+  static EventSource? _parseSource(Object? value) {
+    if (value is! Map<String, Object?>) return null;
+    final id = value['id'];
+    if (id is! String || id.isEmpty) return null;
+    final kind = switch (value['kind']) {
+      'contact' => EventSourceKind.contact,
+      'calendar' => EventSourceKind.calendar,
+      _ => null,
+    };
+    if (kind == null) return null;
+    return EventSource(
+      kind: kind,
+      externalId: id,
+      yearKnown: value['yearKnown'] != false,
     );
   }
 

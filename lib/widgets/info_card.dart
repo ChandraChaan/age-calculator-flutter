@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agecalculator/widgets/glass.dart';
 
 class InfoCard extends StatelessWidget {
   const InfoCard({
@@ -29,7 +30,7 @@ class InfoCard extends StatelessWidget {
           ),
         );
       },
-      child: Card(
+      child: GlassCard(
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(

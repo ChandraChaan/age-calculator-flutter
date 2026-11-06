@@ -1,4 +1,8 @@
+import 'package:agecalculator/screens/import_screen.dart';
+import 'package:agecalculator/services/device_import.dart';
+import 'package:agecalculator/services/reminder_service.dart';
 import 'package:agecalculator/state/event_controller.dart';
+import 'package:agecalculator/widgets/glass.dart';
 import 'package:flutter/material.dart';
 
 const double _maxContentWidth = 720;
@@ -6,18 +10,61 @@ const double _maxContentWidth = 720;
 // Width per unit of text scale needed to show the theme choices in one row.
 const double _minThemeRowWidth = 280;
 
-/// Theme, "Delete all events" and the privacy note.
+/// Theme, reminders, importing, "Delete all events" and the privacy note.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     super.key,
     required this.events,
     required this.themeMode,
     required this.onThemeChanged,
+    this.reminders,
+    this.importer,
+    this.clock = DateTime.now,
   });
 
   final EventController events;
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeChanged;
+
+  /// Shows the notification setting when not null.
+  final ReminderSync? reminders;
+
+  /// Shows contact and calendar import when not null.
+  final DeviceImporter? importer;
+
+  final DateTime Function() clock;
+
+  Future<void> _allowNotifications(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final allowed = await reminders!.ensurePermission();
+    if (allowed) return;
+    final importer = this.importer;
+    messenger
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Turn on notifications for Age Calculator in system Settings.',
+          ),
+          action: importer == null
+              ? null
+              : SnackBarAction(
+                  label: 'Settings',
+                  onPressed: importer.openAppSettings,
+                ),
+        ),
+      );
+  }
+
+  void _import(BuildContext context, ImportKind kind) {
+    startDeviceImport(
+      context,
+      kind: kind,
+      importer: importer!,
+      events: events,
+      clock: clock,
+    );
+  }
 
   Future<void> _deleteAllEvents(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -122,6 +169,91 @@ class SettingsScreen extends StatelessWidget {
                           );
                   },
                 ),
+                if (reminders case final reminders?) ...[
+                  const SizedBox(height: 32),
+                  const _SectionTitle('Reminders'),
+                  const SizedBox(height: 12),
+                  ValueListenableBuilder<bool?>(
+                    valueListenable: reminders.allowed,
+                    builder: (context, allowed, _) => GlassCard(
+                      margin: EdgeInsets.zero,
+                      child: ListTile(
+                        leading: Icon(
+                          allowed == false
+                              ? Icons.notifications_off_rounded
+                              : Icons.notifications_active_rounded,
+                        ),
+                        title: const Text('Notifications'),
+                        subtitle: Text(
+                          allowed == false
+                              ? "Off. Reminders won't appear."
+                              : 'Each event chooses its own reminders.',
+                        ),
+                        trailing: allowed == false
+                            ? TextButton(
+                                onPressed: () => _allowNotifications(context),
+                                child: const Text('Allow'),
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
+                  ValueListenableBuilder<bool?>(
+                    valueListenable: reminders.exact,
+                    builder: (context, exact, _) {
+                      if (exact != false || reminders.allowed.value == false) {
+                        return const SizedBox.shrink();
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: GlassCard(
+                          margin: EdgeInsets.zero,
+                          child: ListTile(
+                            leading: const Icon(Icons.alarm_rounded),
+                            title: const Text('On-time reminders'),
+                            subtitle: const Text(
+                              'Without this, Android may deliver reminders '
+                              'up to an hour late.',
+                            ),
+                            trailing: TextButton(
+                              onPressed: reminders.requestExact,
+                              child: const Text('Turn on'),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+                if (importer != null) ...[
+                  const SizedBox(height: 32),
+                  const _SectionTitle('Import'),
+                  const SizedBox(height: 12),
+                  GlassCard(
+                    margin: EdgeInsets.zero,
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.cake_rounded),
+                          title: const Text('Birthdays from contacts'),
+                          subtitle: const Text(
+                            'Birthdays and anniversaries saved in contacts',
+                          ),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () => _import(context, ImportKind.contacts),
+                        ),
+                        const Divider(indent: 16, endIndent: 16),
+                        ListTile(
+                          leading: const Icon(Icons.event_rounded),
+                          title: const Text('Events from calendar'),
+                          subtitle: const Text('Your next 6 months'),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () => _import(context, ImportKind.calendar),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 32),
                 const _SectionTitle('Your data'),
                 const SizedBox(height: 12),
@@ -146,7 +278,8 @@ class SettingsScreen extends StatelessWidget {
                       child: Text(
                         'Your events are stored locally on your device. The '
                         'app does not use an account or sync your events '
-                        'online.',
+                        'online. Contacts and calendars are read only when '
+                        'you import, and never changed.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),

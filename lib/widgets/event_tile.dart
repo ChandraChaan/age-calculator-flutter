@@ -7,6 +7,7 @@ import 'package:agecalculator/utils/countdown_format.dart';
 import 'package:agecalculator/widgets/event_category_style.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:agecalculator/widgets/glass.dart';
 
 /// Joins each number to the word after it with a non-breaking space, so a
 /// wrapped label never separates "2" from "hours".
@@ -134,7 +135,7 @@ class EventTile extends StatelessWidget {
       fontWeight: FontWeight.w600,
     );
 
-    final tile = Card(
+    final tile = GlassCard(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,

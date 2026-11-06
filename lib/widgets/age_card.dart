@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:agecalculator/widgets/glass.dart';
 
 class AgeCard extends StatelessWidget {
   const AgeCard({
@@ -27,8 +28,9 @@ class AgeCard extends StatelessWidget {
     final iconBadge = Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(12),
+        color: accent.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: 0.22)),
       ),
       child: Icon(icon, color: accent, size: 22),
     );
@@ -65,7 +67,7 @@ class AgeCard extends StatelessWidget {
           ),
         );
       },
-      child: Card(
+      child: GlassCard(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: horizontal

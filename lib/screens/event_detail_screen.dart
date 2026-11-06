@@ -1,3 +1,4 @@
+import 'package:agecalculator/engine/reminder_planner.dart';
 import 'package:agecalculator/engine/upcoming_planner.dart';
 import 'package:agecalculator/models/event.dart';
 import 'package:agecalculator/screens/event_editor_screen.dart';
@@ -8,6 +9,7 @@ import 'package:agecalculator/widgets/event_tile.dart';
 import 'package:agecalculator/widgets/minute_ticker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:agecalculator/widgets/glass.dart';
 
 const double _maxContentWidth = 720;
 const String _saveFailedMessage = "Couldn't save. Please try again.";
@@ -212,7 +214,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Card(
+            GlassCard(
               child: Column(
                 children: [
                   _DetailRow(
@@ -235,10 +237,30 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     value: recurrenceLabel(event.recurrence),
                   ),
                   _DetailRow(
+                    icon: Icons.notifications_rounded,
+                    label: 'Reminders',
+                    value: event.reminders.isEmpty
+                        ? 'None'
+                        : [
+                            for (final m in event.reminders)
+                              reminderLeadLabel(m, allDay: event.isAllDay),
+                          ].join(', '),
+                  ),
+                  _DetailRow(
                     icon: category.icon,
                     label: 'Category',
                     value: category.label,
                   ),
+                  if (event.source case final source?)
+                    _DetailRow(
+                      icon: source.kind == EventSourceKind.contact
+                          ? Icons.contacts_rounded
+                          : Icons.event_rounded,
+                      label: 'Imported from',
+                      value: source.kind == EventSourceKind.contact
+                          ? 'Contacts'
+                          : 'Calendar',
+                    ),
                   if (notes != null)
                     _DetailRow(
                       icon: Icons.notes_rounded,
@@ -249,7 +271,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            Card(
+            GlassCard(
               clipBehavior: Clip.antiAlias,
               child: SwitchListTile(
                 title: const Text('Active'),

@@ -116,7 +116,7 @@ UpcomingPlan planUpcoming(List<Event> events, DateTime now) {
     final occurrence = PlannedOccurrence(
       event: event,
       countdown: countdown,
-      yearsSinceAnchor: event.recurrence == Recurrence.yearly
+      yearsSinceAnchor: event.recurrence == Recurrence.yearly && event.yearKnown
           ? countdown.date.year - event.date.year
           : null,
     );

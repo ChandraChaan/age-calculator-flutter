@@ -417,8 +417,6 @@ class _PrimaryAgeCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final fitsInRow =
@@ -430,21 +428,18 @@ class _PrimaryAgeCards extends StatelessWidget {
             label: 'Years',
             value: '${result.years}',
             icon: Icons.cake_rounded,
-            accentColor: colorScheme.primary,
             horizontal: !fitsInRow,
           ),
           AgeCard(
             label: 'Months',
             value: '${result.months}',
             icon: Icons.calendar_view_month_rounded,
-            accentColor: colorScheme.secondary,
             horizontal: !fitsInRow,
           ),
           AgeCard(
             label: 'Days',
             value: '${result.days}',
             icon: Icons.today_rounded,
-            accentColor: colorScheme.tertiary,
             horizontal: !fitsInRow,
           ),
         ];
