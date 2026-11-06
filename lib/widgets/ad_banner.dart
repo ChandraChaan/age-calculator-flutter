@@ -19,7 +19,7 @@ class AdBanner extends StatefulWidget {
   State<AdBanner> createState() => _AdBannerState();
 }
 
-class _AdBannerState extends State<AdBanner> {
+class _AdBannerState extends State<AdBanner> with WidgetsBindingObserver {
   static const _retryDelays = [
     Duration(seconds: 20),
     Duration(seconds: 60),
@@ -35,8 +35,21 @@ class _AdBannerState extends State<AdBanner> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     widget.ads?.addListener(_onAdsChanged);
     _onAdsChanged();
+  }
+
+  /// After the retries run out, try again each time the app comes back to
+  /// the foreground (for example once AdMob approves the account).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    if (!_requested || _loaded || _ad != null || _retry?.isActive == true) {
+      return;
+    }
+    _attempt = 0;
+    _load();
   }
 
   @override
@@ -59,21 +72,28 @@ class _AdBannerState extends State<AdBanner> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  void _load() {
+  Future<void> _load() async {
     final unit = AdUnits.banner;
     final ads = widget.ads;
     if (unit == null || ads == null || !mounted) return;
     _attempt++;
     ads.reportBanner('loading (attempt $_attempt)');
+    // A full-width anchored adaptive banner, falling back to 320x50. The
+    // "large" variant the SDK now suggests is about 128dp tall, too much
+    // above the navigation bar, so the standard one (about 50-60dp) is used.
+    final width = MediaQuery.sizeOf(context).width.truncate();
+    final size =
+        // ignore: deprecated_member_use
+        await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(width) ??
+        AdSize.banner;
+    if (!mounted) return;
     final banner = BannerAd(
       adUnitId: unit,
-      size: AdSize.banner,
+      size: size,
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (_) {
-          ads.reportBanner(
-            'loaded (${AdSize.banner.width}x${AdSize.banner.height})',
-          );
+          ads.reportBanner('loaded (${size.width}x${size.height})');
           if (mounted) setState(() => _loaded = true);
         },
         onAdFailedToLoad: (failed, error) {
@@ -84,7 +104,7 @@ class _AdBannerState extends State<AdBanner> {
           );
           if (!mounted) return;
           setState(() {
-            _ad = null;
+            if (identical(_ad, failed)) _ad = null;
             _loaded = false;
           });
           if (_attempt <= _retryDelays.length) {
@@ -102,6 +122,7 @@ class _AdBannerState extends State<AdBanner> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.ads?.removeListener(_onAdsChanged);
     _retry?.cancel();
     _ad?.dispose();

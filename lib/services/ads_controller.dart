@@ -101,23 +101,34 @@ class AdsController extends ChangeNotifier {
       'starting (unit=${AdUnits.isTestUnit ? 'Google test unit' : 'configured unit'})',
     );
     _setReason('initialising', state: AdsState.initialising);
+    // Google's User Messaging Platform: shows the consent form only where
+    // the law requires it (e.g. EEA/UK). A consent error never decides on
+    // its own: as Google recommends, ads may still be requested when
+    // canRequestAds() allows it (consent from an earlier session, or not
+    // required in this region).
     try {
-      // Google's User Messaging Platform: shows the consent form only where
-      // the law requires it (e.g. EEA/UK). Must finish before the SDK starts.
       await _requestConsentInfo();
       _log('consent info updated');
-      await _showFormIfRequired();
+      try {
+        await _showFormIfRequired();
+      } catch (e) {
+        _log('consent form failed (${e.runtimeType}: $e)');
+      }
+    } catch (e) {
+      _log('consent info update failed (${e.runtimeType}: $e)');
+    }
+    try {
       final canRequest = await ConsentInformation.instance.canRequestAds();
       _log('canRequestAds=$canRequest');
-      if (canRequest) {
-        final status = await MobileAds.instance.initialize();
-        for (final entry in status.adapterStatuses.entries) {
-          _log('adapter ${entry.key}: ${entry.value.state.name}');
-        }
-        _setReason('SDK initialised', state: AdsState.ready);
-      } else {
+      if (!canRequest) {
         _setReason('consent does not allow ads', state: AdsState.blocked);
+        return;
       }
+      final status = await MobileAds.instance.initialize();
+      for (final entry in status.adapterStatuses.entries) {
+        _log('adapter ${entry.key}: ${entry.value.state.name}');
+      }
+      _setReason('SDK initialised', state: AdsState.ready);
       _privacyOptionsRequired =
           await ConsentInformation.instance
               .getPrivacyOptionsRequirementStatus() ==
