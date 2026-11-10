@@ -53,6 +53,51 @@ List<PlannedOccurrence> _upcomingInOrder(UpcomingPlan plan) => [
 ];
 
 void main() {
+  group('elapsedSinceEvent', () {
+    test('years, months and days since a yearly event, as of today', () {
+      final event = _event(
+        'b',
+        date: CivilDate(2000, 2, 29),
+        recurrence: Recurrence.yearly,
+      );
+      final elapsed = elapsedSinceEvent(event, _today)!;
+      expect((elapsed.years, elapsed.months, elapsed.days), (26, 3, 17));
+      expect(planUpcoming([event], _now).next!.elapsed, elapsed);
+    });
+
+    test('null when not yearly, without a year, today or ahead', () {
+      final past = CivilDate(2010, 1, 1);
+      expect(
+        elapsedSinceEvent(
+          _event('m', date: past, recurrence: Recurrence.monthly),
+          _today,
+        ),
+        isNull,
+      );
+      expect(elapsedSinceEvent(_event('o', date: past), _today), isNull);
+      expect(
+        elapsedSinceEvent(_event('t', recurrence: Recurrence.yearly), _today),
+        isNull,
+      );
+      expect(
+        elapsedSinceEvent(
+          _event('f', dayOffset: 3, recurrence: Recurrence.yearly),
+          _today,
+        ),
+        isNull,
+      );
+      final noYear = _event('n', date: past, recurrence: Recurrence.yearly)
+          .copyWith(
+            source: const EventSource(
+              kind: EventSourceKind.contact,
+              externalId: 'c1',
+              yearKnown: false,
+            ),
+          );
+      expect(elapsedSinceEvent(noYear, _today), isNull);
+    });
+  });
+
   group('empty input', () {
     test('produces an empty plan', () {
       final plan = planUpcoming(const [], _now);

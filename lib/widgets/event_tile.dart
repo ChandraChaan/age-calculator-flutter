@@ -1,9 +1,11 @@
+import 'package:agecalculator/engine/age_calculator.dart';
 import 'package:agecalculator/engine/civil_date.dart';
 import 'package:agecalculator/engine/local_time.dart';
 import 'package:agecalculator/engine/recurrence.dart';
 import 'package:agecalculator/engine/upcoming_planner.dart';
 import 'package:agecalculator/models/event.dart';
 import 'package:agecalculator/utils/countdown_format.dart';
+import 'package:agecalculator/utils/date_utils.dart';
 import 'package:agecalculator/widgets/event_category_style.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -23,6 +25,24 @@ String? turnsLabel(Event event, int? yearsSinceAnchor) {
   if (event.category != EventCategory.birthday) return null;
   if (yearsSinceAnchor == null || yearsSinceAnchor <= 0) return null;
   return 'Turns $yearsSinceAnchor';
+}
+
+/// "26 years, 4 months, 12 days", leaving out units that are zero.
+String elapsedDuration(AgeBreakdown elapsed) {
+  final parts = [
+    if (elapsed.years > 0) AppDateUtils.pluralize(elapsed.years, 'year'),
+    if (elapsed.months > 0) AppDateUtils.pluralize(elapsed.months, 'month'),
+    if (elapsed.days > 0) AppDateUtils.pluralize(elapsed.days, 'day'),
+  ];
+  return parts.isEmpty ? AppDateUtils.pluralize(0, 'day') : parts.join(', ');
+}
+
+/// "Age: 26 years, 4 months, 12 days" for a birthday, otherwise
+/// "Completed: 3 years, 2 months, 5 days"; `null` without [elapsed].
+String? elapsedLabel(Event event, AgeBreakdown? elapsed) {
+  if (elapsed == null) return null;
+  final prefix = event.category == EventCategory.birthday ? 'Age' : 'Completed';
+  return '$prefix: ${elapsedDuration(elapsed)}';
 }
 
 /// [time] in the Material time format, honouring the device 12/24-hour
@@ -72,6 +92,7 @@ class EventTile extends StatelessWidget {
     required this.date,
     required this.status,
     this.yearsSinceAnchor,
+    this.elapsed,
     this.paused = false,
     this.onTap,
   });
@@ -87,6 +108,7 @@ class EventTile extends StatelessWidget {
       date: occurrence.date,
       status: countdownLabel(occurrence.countdown),
       yearsSinceAnchor: occurrence.yearsSinceAnchor,
+      elapsed: occurrence.elapsed,
       onTap: onTap,
     );
   }
@@ -111,6 +133,10 @@ class EventTile extends StatelessWidget {
   final String status;
 
   final int? yearsSinceAnchor;
+
+  /// Time completed since the event's original date (a birthday's age).
+  final AgeBreakdown? elapsed;
+
   final bool paused;
   final VoidCallback? onTap;
 
@@ -130,6 +156,7 @@ class EventTile extends StatelessWidget {
         color: colorScheme.onSurfaceVariant,
       ),
     );
+    final elapsedText = elapsedLabel(event, elapsed);
     final statusStyle = theme.textTheme.labelLarge?.copyWith(
       color: paused ? colorScheme.onSurfaceVariant : colorScheme.primary,
       fontWeight: FontWeight.w600,
@@ -158,7 +185,21 @@ class EventTile extends StatelessWidget {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [title, const SizedBox(height: 4), subtitle],
+                      children: [
+                        title,
+                        const SizedBox(height: 4),
+                        subtitle,
+                        if (elapsedText != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            keepNumbersWithUnits(elapsedText),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   if (statusBeside) ...[
