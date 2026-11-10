@@ -1,3 +1,5 @@
+import 'package:agecalculator/widgets/event_tile.dart'
+    show keepNumbersWithUnits;
 import 'package:agecalculator/app.dart';
 import 'package:agecalculator/models/event.dart';
 import 'package:agecalculator/screens/app_shell.dart';
@@ -482,7 +484,15 @@ void main() {
 
       expect(
         tester.getSemantics(find.text("Mom's birthday")),
-        isSemantics(label: "Birthday\nMom's birthday\nTurns 56\nToday"),
+        isSemantics(
+          label: [
+            'Birthday',
+            "Mom's birthday",
+            'Turns 56',
+            keepNumbersWithUnits('Age: 56 years'),
+            'Today',
+          ].join('\n'),
+        ),
       );
       expect(
         tester.getSemantics(_activeSwitch),

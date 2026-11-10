@@ -1,3 +1,4 @@
+import 'package:agecalculator/engine/civil_date.dart';
 import 'package:agecalculator/engine/recurrence.dart';
 import 'package:agecalculator/engine/reminder_planner.dart';
 import 'package:agecalculator/engine/upcoming_planner.dart';
@@ -217,6 +218,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ? 'Paused'
         : countdownLabel(occurrence.countdown);
     final date = occurrence?.date ?? event.date;
+    final elapsed = elapsedLabel(
+      event,
+      elapsedSinceEvent(
+        event,
+        CivilDate.fromDateTime(widget.clock().toLocal()),
+      ),
+    );
 
     return Align(
       alignment: Alignment.topCenter,
@@ -246,6 +254,15 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   if (turns != null) ...[
                     const SizedBox(height: 8),
                     Text(turns, style: theme.textTheme.titleMedium),
+                  ],
+                  if (elapsed != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      keepNumbersWithUnits(elapsed),
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 16),
                   Text(

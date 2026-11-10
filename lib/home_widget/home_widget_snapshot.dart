@@ -69,6 +69,7 @@ class HomeWidgetSnapshot {
                   event.recurrence == Recurrence.yearly && event.yearKnown
                   ? date.year - event.date.year
                   : null,
+              elapsed: elapsedSinceEvent(event, today),
             ),
           );
           count++;

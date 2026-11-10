@@ -213,6 +213,17 @@ class _NextCard extends StatelessWidget {
                     color: onCard.withValues(alpha: 0.8),
                   ),
                 ),
+                if (elapsedLabel(event, occurrence.elapsed)
+                    case final elapsed?) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    keepNumbersWithUnits(elapsed),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: onCard,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Text(
                   keepNumbersWithUnits(countdownLabel(occurrence.countdown)),

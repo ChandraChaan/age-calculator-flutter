@@ -515,6 +515,66 @@ void main() {
     });
   });
 
+  group('time completed', () {
+    testWidgets('age for birthdays, completed time for yearly events', (
+      tester,
+    ) async {
+      final clock = TestClock();
+      final events = await _controller(
+        clock,
+        events: [
+          testEvent(
+            'born',
+            'Baby',
+            category: EventCategory.birthday,
+            date: CivilDate(2026, 6, 20),
+            recurrence: Recurrence.yearly,
+          ),
+          testEvent(
+            'leap',
+            'Leap day friend',
+            category: EventCategory.birthday,
+            date: CivilDate(2000, 2, 29),
+            recurrence: Recurrence.yearly,
+          ),
+          testEvent(
+            'monthly',
+            'Monthly birthday',
+            category: EventCategory.birthday,
+            date: CivilDate(2000, 6, 25),
+            recurrence: Recurrence.monthly,
+          ),
+          testEvent(
+            'anniversary',
+            'Anniversary',
+            category: EventCategory.anniversary,
+            date: CivilDate(2016, 6, 30),
+            recurrence: Recurrence.yearly,
+          ),
+        ],
+      );
+      await _pumpScreen(tester, events, clock);
+
+      expect(
+        _inTile(
+          'Leap day friend',
+          keepNumbersWithUnits('Age: 26 years, 3 months, 17 days'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        _inTile(
+          'Anniversary',
+          keepNumbersWithUnits('Completed: 9 years, 11 months, 16 days'),
+        ),
+        findsOneWidget,
+      );
+      // Not born yet, and not yearly: nothing completed to show.
+      expect(find.textContaining('Age:'), findsOneWidget);
+      expect(find.textContaining('Completed:'), findsOneWidget);
+    });
+  });
+
   group('minute updates', () {
     testWidgets('UI-04 the label changes at the next minute boundary', (
       tester,
@@ -828,6 +888,7 @@ void main() {
             'Birthday',
             "Mom's birthday",
             'Turns 56 · Mon, 15 Jun 2026 · Every year',
+            keepNumbersWithUnits('Age: 56 years'),
             'Today',
           ].join('\n'),
           hasTapAction: true,

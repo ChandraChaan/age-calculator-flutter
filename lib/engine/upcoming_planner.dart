@@ -1,3 +1,4 @@
+import 'package:agecalculator/engine/age_calculator.dart';
 import 'package:agecalculator/engine/civil_date.dart';
 import 'package:agecalculator/engine/countdown.dart';
 import 'package:agecalculator/engine/recurrence.dart';
@@ -9,6 +10,7 @@ class PlannedOccurrence {
     required this.event,
     required this.countdown,
     this.yearsSinceAnchor,
+    this.elapsed,
   });
 
   final Event event;
@@ -17,6 +19,10 @@ class PlannedOccurrence {
   /// For yearly events, how many years after the event's date this
   /// occurrence falls (a birthday's "Turns N"); `null` otherwise.
   final int? yearsSinceAnchor;
+
+  /// Years, months and days from the event's original date to today (a
+  /// birthday's current age); see [elapsedSinceEvent].
+  final AgeBreakdown? elapsed;
 
   CivilDate get date => countdown.date;
 
@@ -27,11 +33,12 @@ class PlannedOccurrence {
     return other is PlannedOccurrence &&
         other.event == event &&
         other.countdown == countdown &&
-        other.yearsSinceAnchor == yearsSinceAnchor;
+        other.yearsSinceAnchor == yearsSinceAnchor &&
+        other.elapsed == elapsed;
   }
 
   @override
-  int get hashCode => Object.hash(event, countdown, yearsSinceAnchor);
+  int get hashCode => Object.hash(event, countdown, yearsSinceAnchor, elapsed);
 
   @override
   String toString() => 'PlannedOccurrence(${event.id}, $countdown)';
@@ -95,6 +102,16 @@ class UpcomingPlan {
     Object.hashAll(paused),
     hiddenDuplicates,
   );
+}
+
+/// Time completed from a yearly event's original date to [today]: a
+/// birthday's current age, how long a couple has been married. `null` for
+/// events that don't repeat yearly, imported dates without a year, and
+/// dates that are today or still ahead.
+AgeBreakdown? elapsedSinceEvent(Event event, CivilDate today) {
+  if (event.recurrence != Recurrence.yearly || !event.yearKnown) return null;
+  if (!event.date.isBefore(today)) return null;
+  return const AgeCalculator().calculate(event.date, today);
 }
 
 /// The countdown to [event]'s current or next occurrence, passing over the
@@ -185,6 +202,7 @@ UpcomingPlan planUpcoming(
       yearsSinceAnchor: event.recurrence == Recurrence.yearly && event.yearKnown
           ? countdown.date.year - event.date.year
           : null,
+      elapsed: elapsedSinceEvent(event, today),
     );
     if (countdown.state == CountdownState.passed) {
       passed.add(occurrence);
